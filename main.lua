@@ -451,522 +451,263 @@ function Library:CreateWindow(hubName, btnText)
         page.Visible = false
         page.ScrollBarThickness = 3
         page.ScrollBarImageColor3 = colors.accent
-        page.CanvasSize = UDim2.new(0, 0, 0, 0)
+        page.CanvasSize = UDim2.new(0, 0, 0, 0)  -- ВАЖНО: начальный размер
+        page.AutomaticCanvasSize = Enum.AutomaticSize.Y  -- АВТО-РАЗМЕР!
         page.Active = true
         
         local layout = Instance.new("UIListLayout", page)
-        layout.Padding = UDim.new(0, 10)
+        layout.Padding = UDim.new(0, 9)
         layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
         
         local padding = Instance.new("UIPadding", page)
-        padding.PaddingTop = UDim.new(0, 8)
-        padding.PaddingBottom = UDim.new(0, 8)
-        
-        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            page.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 16)
-        end)
-        
-        -- Кнопка таба
+        padding.PaddingTop = UDim.new(0, 10)
+        padding.PaddingBottom = UDim.new(0, 10)
+        padding.PaddingLeft = UDim.new(0, 5)
+        padding.PaddingRight = UDim.new(0, 5)
+    
         local b = Instance.new("TextButton", tabBtns)
         b.AutoLocalize = false
-        b.Size = UDim2.new(1, 0, 0, 34)
+        b.Size = UDim2.new(1, 0, 0, 32)
+        b.Text = name
         b.BackgroundTransparency = 1
-        b.Text = "  " .. name
         b.TextColor3 = colors.text_dim
-        b.Font = Enum.Font.Gotham
+        b.Font = Enum.Font.Ubuntu
         b.TextSize = 12
-        b.TextXAlignment = Enum.TextXAlignment.Left
         b.BorderSizePixel = 0
+    
+        local highlight = Instance.new("Frame", b)
+        highlight.Name = "TabHighlight"
+        highlight.Size = UDim2.new(0.9, 0, 0.9, 0)
+        highlight.Position = UDim2.new(0.05, 0, 0.05, 0)
+        highlight.BackgroundColor3 = Color3.fromRGB(100, 100, 105)
+        highlight.BackgroundTransparency = 1 
+        applyLiquidStyle(highlight, 10, true) 
         
-        -- Индикатор активного таба (зелёная полоска слева)
-        local tabIndicator = Instance.new("Frame", b)
-        tabIndicator.Name = "TabIndicator"
-        tabIndicator.Size = UDim2.new(0, 3, 0, 20)
-        tabIndicator.Position = UDim2.new(0, 0, 0.5, 0)
-        tabIndicator.AnchorPoint = Vector2.new(0, 0.5)
-        tabIndicator.BackgroundColor3 = colors.accent
-        tabIndicator.BackgroundTransparency = 1
-        tabIndicator.BorderSizePixel = 0
-        applyStyle(tabIndicator, 2, nil, 0, 0)
-        
-        -- Фон активного таба
-        local tabBg = Instance.new("Frame", b)
-        tabBg.Name = "TabBg"
-        tabBg.Size = UDim2.new(1, -8, 1, -4)
-        tabBg.Position = UDim2.new(0, 4, 0, 2)
-        tabBg.BackgroundColor3 = colors.accent
-        tabBg.BackgroundTransparency = 1
-        tabBg.BorderSizePixel = 0
-        applyStyle(tabBg, 10, nil, 0, 0)
-        
-        b.MouseButton1Click:Connect(function()
-            -- Скрыть все страницы
-            for _, v in pairs(container:GetChildren()) do
-                if v:IsA("ScrollingFrame") then v.Visible = false end
-            end
-            
-            -- Сбросить все табы
-            for _, btn in pairs(tabBtns:GetChildren()) do
-                if btn:IsA("TextButton") then
-                    btn.TextColor3 = colors.text_dim
-                    local ind = btn:FindFirstChild("TabIndicator")
-                    local bg = btn:FindFirstChild("TabBg")
-                    if ind then ind.BackgroundTransparency = 1 end
-                    if bg then bg.BackgroundTransparency = 1 end
-                end
-            end
-            
-            -- Активировать текущий
-            page.Visible = true
-            b.TextColor3 = colors.text
-            tabIndicator.BackgroundTransparency = 0
-            tabBg.BackgroundTransparency = 0.88
-        end)
-        
-        if first then
-            page.Visible = true
-            first = false
-            b.TextColor3 = colors.text
-            tabIndicator.BackgroundTransparency = 0
-            tabBg.BackgroundTransparency = 0.88
+        if highlight:FindFirstChild("UIStroke") then
+            highlight.UIStroke.Enabled = false
         end
-        
+    
+        b.MouseButton1Click:Connect(function()
+            for _, v in pairs(container:GetChildren()) do 
+                if v:IsA("ScrollingFrame") then v.Visible = false end 
+            end
+            
+            for _, btn in pairs(tabBtns:GetChildren()) do 
+                if btn:IsA("TextButton") then 
+                    btn.TextColor3 = colors.text_dim
+                    local h = btn:FindFirstChild("TabHighlight")
+                    if h then 
+                        h.BackgroundTransparency = 1 
+                        if h:FindFirstChild("UIStroke") then h.UIStroke.Enabled = false end
+                    end
+                end 
+            end
+            
+            page.Visible = true
+            b.TextColor3 = Color3.fromRGB(255, 255, 255)
+            highlight.BackgroundTransparency = 0.5
+            if highlight:FindFirstChild("UIStroke") then highlight.UIStroke.Enabled = true end
+        end)
+    
+        if first then 
+            page.Visible = true
+            first = false 
+            b.TextColor3 = Color3.fromRGB(255, 255, 255)
+            highlight.BackgroundTransparency = 0.5
+            if highlight:FindFirstChild("UIStroke") then highlight.UIStroke.Enabled = true end
+        end
+    
         local m = {}
         
-        -- ═══════════════════════════════════════
-        -- СЕКЦИЯ
-        -- ═══════════════════════════════════════
-        function m:AddSection(text)
-            local sectionFrame = Instance.new("Frame", page)
-            sectionFrame.Size = UDim2.new(1, 0, 0, 28)
-            sectionFrame.BackgroundTransparency = 1
-            
-            local sectionLine = Instance.new("Frame", sectionFrame)
-            sectionLine.Size = UDim2.new(1, 0, 0, 1)
-            sectionLine.Position = UDim2.new(0, 0, 0.5, 0)
-            sectionLine.BackgroundColor3 = colors.stroke
-            sectionLine.BackgroundTransparency = 0.85
-            sectionLine.BorderSizePixel = 0
-            
-            local sectionLabel = Instance.new("TextLabel", sectionFrame)
-            sectionLabel.AutoLocalize = false
-            sectionLabel.Size = UDim2.new(0, 200, 0, 20)
-            sectionLabel.Position = UDim2.new(0, 8, 0.5, 0)
-            sectionLabel.AnchorPoint = Vector2.new(0, 0.5)
-            sectionLabel.BackgroundColor3 = colors.bg_secondary
-            sectionLabel.BackgroundTransparency = 0
-            sectionLabel.Text = text:upper()
-            sectionLabel.TextColor3 = colors.accent
-            sectionLabel.Font = Enum.Font.GothamBold
-            sectionLabel.TextSize = 10
-            sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-            -- УБРАНО: sectionLabel.LetterSpacing = 1.2
-            applyStyle(sectionLabel, 6, colors.stroke, 0.7, 0.8)
-            
-            return sectionFrame
-        end
-        
-        -- ═══════════════════════════════════════
-        -- ЛЕЙБЛ
-        -- ═══════════════════════════════════════
-        function m:AddLabel(text)
-            local labelFrame = Instance.new("Frame", page)
-            labelFrame.Size = UDim2.new(1, 0, 0, 24)
-            labelFrame.BackgroundTransparency = 1
-            
-            local label = Instance.new("TextLabel", labelFrame)
-            label.AutoLocalize = false
-            label.Size = UDim2.new(1, 0, 1, 0)
-            label.BackgroundTransparency = 1
-            label.Text = text
-            label.TextColor3 = colors.text_dim
-            label.Font = Enum.Font.Gotham
-            label.TextSize = 12
-            label.TextXAlignment = Enum.TextXAlignment.Left
-            
-            return labelFrame
-        end
-        
-        -- ═══════════════════════════════════════
-        -- КНОПКА
-        -- ═══════════════════════════════════════
         function m:AddButton(text, cb)
-            local btnFrame = Instance.new("Frame", page)
-            btnFrame.Size = UDim2.new(1, 0, 0, 38)
-            btnFrame.BackgroundTransparency = 1
-            
-            local btn = Instance.new("TextButton", btnFrame)
+            local btn = Instance.new("TextButton", page)
             btn.AutoLocalize = false
-            btn.Size = UDim2.new(1, 0, 1, 0)
+            btn.Size = UDim2.new(1, -10, 0, 32)
+            btn.Position = UDim2.new(0, 5, 0, 0)
             btn.BackgroundColor3 = colors.element_bg
-            btn.BackgroundTransparency = 0
-            btn.Text = text
+            btn.BackgroundTransparency = colors.element_trans
             btn.TextColor3 = colors.text
-            btn.Font = Enum.Font.Gotham
-            btn.TextSize = 12
-            btn.BorderSizePixel = 0
-            applyStyle(btn, 12, colors.stroke, 0.75, 1)
-            addClickEffect(btn, 2)
-            addHoverEffect(btn, colors.element_hover, colors.element_bg)
-            
-            btn.MouseButton1Click:Connect(function()
-                cb()
-            end)
-            
-            return btnFrame
-        end
-        
-        -- ═══════════════════════════════════════
-        -- КНОПКА (зелёная, акцентная)
-        -- ══════════════════════════════════════
-        function m:AddAccentButton(text, cb)
-            local btnFrame = Instance.new("Frame", page)
-            btnFrame.Size = UDim2.new(1, 0, 0, 38)
-            btnFrame.BackgroundTransparency = 1
-            
-            local btn = Instance.new("TextButton", btnFrame)
-            btn.AutoLocalize = false
-            btn.Size = UDim2.new(1, 0, 1, 0)
-            btn.BackgroundColor3 = colors.accent
-            btn.BackgroundTransparency = 0
             btn.Text = text
-            btn.TextColor3 = colors.bg
-            btn.Font = Enum.Font.GothamBold
+            btn.Font = Enum.Font.Ubuntu
             btn.TextSize = 12
-            btn.BorderSizePixel = 0
-            applyStyle(btn, 12, colors.accent, 0.3, 1)
-            addClickEffect(btn, 2)
-            
-            btn.MouseButton1Click:Connect(function()
-                cb()
-            end)
-            
-            return btnFrame
+            applyLiquidStyle(btn, 14, true)
+            addClickEffect(btn)
+            btn.MouseButton1Click:Connect(cb)
         end
         
-        -- ═══════════════════════════════════════
-        -- ПЕРЕКЛЮЧАТЕЛЬ (TOGGLE)
-        -- ═══════════════════════════════════════
         function m:AddToggle(text, cb)
             local f = Instance.new("Frame", page)
-            f.Size = UDim2.new(1, 0, 0, 42)
+            f.Size = UDim2.new(1, -10, 0, 34)
+            f.Position = UDim2.new(0, 5, 0, 0)
             f.BackgroundColor3 = colors.element_bg
-            f.BackgroundTransparency = 0
-            applyStyle(f, 12, colors.stroke, 0.75, 1)
+            f.BackgroundTransparency = colors.element_trans
+            applyLiquidStyle(f, 14, true)
             
             local l = Instance.new("TextLabel", f)
             l.AutoLocalize = false
             l.Text = text
-            l.Size = UDim2.new(1, -60, 1, 0)
-            l.Position = UDim2.new(0, 14, 0, 0)
+            l.Size = UDim2.new(1, -50, 1, 0)
+            l.Position = UDim2.new(0, 12, 0, 0)
             l.BackgroundTransparency = 1
             l.TextColor3 = colors.text
-            l.Font = Enum.Font.Gotham
+            l.Font = Enum.Font.Ubuntu
             l.TextSize = 12
             l.TextXAlignment = Enum.TextXAlignment.Left
             
-            -- Переключатель
             local switch = Instance.new("Frame", f)
-            switch.Size = UDim2.new(0, 38, 0, 20)
-            switch.Position = UDim2.new(1, -48, 0.5, 0)
+            switch.Size = UDim2.new(0, 30, 0, 15)
+            switch.Position = UDim2.new(1, -42, 0.5, 0)
             switch.AnchorPoint = Vector2.new(0, 0.5)
             switch.BackgroundColor3 = colors.toggle_off
-            switch.BackgroundTransparency = 0
-            applyStyle(switch, 10, colors.stroke, 0.7, 1)
+            switch.BackgroundTransparency = 0.4
+            applyLiquidStyle(switch, 10, true)
             
-            -- Точка переключателя
             local dot = Instance.new("Frame", switch)
-            dot.Size = UDim2.new(0, 14, 0, 14)
-            dot.Position = UDim2.new(0, 3, 0.5, 0)
+            dot.Size = UDim2.new(0, 11, 0, 11)
+            dot.Position = UDim2.new(0, 2, 0.5, 0)
             dot.AnchorPoint = Vector2.new(0, 0.5)
-            dot.BackgroundColor3 = colors.text_dim
-            dot.BorderSizePixel = 0
-            applyStyle(dot, 7, nil, 0, 0)
+            dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            applyLiquidStyle(dot, 10, false)
             
             local en = false
             local tbtn = Instance.new("TextButton", f)
             tbtn.Size = UDim2.new(1, 0, 1, 0)
             tbtn.BackgroundTransparency = 1
-            tbtn.Text = ""
+            tbtn.Text = " "
             
             tbtn.MouseButton1Click:Connect(function()
                 en = not en
-                TweenService:Create(switch, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                TweenService:Create(switch, TweenInfo.new(0.25, Enum.EasingStyle.Back), {
                     BackgroundColor3 = en and colors.toggle_on or colors.toggle_off
                 }):Play()
-                TweenService:Create(dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                    Position = UDim2.new(0, en and 21 or 3, 0.5, 0),
-                    BackgroundColor3 = en and colors.bg or colors.text_dim
+                TweenService:Create(dot, TweenInfo.new(0.25, Enum.EasingStyle.Back), {
+                    Position = UDim2.new(0, en and 17 or 2, 0.5, 0)
                 }):Play()
                 cb(en)
             end)
-            
-            return f
         end
         
-        -- ═══════════════════════════════════════
-        -- ТЕКСТОВОЕ ПОЛЕ
-        -- ═══════════════════════════════════════
         function m:AddTextBox(text, ph, cb)
             local f = Instance.new("Frame", page)
-            f.Size = UDim2.new(1, 0, 0, 42)
-            f.BackgroundColor3 = colors.element_bg
-            f.BackgroundTransparency = 0
-            applyStyle(f, 12, colors.stroke, 0.75, 1)
-            
-            local label = Instance.new("TextLabel", f)
-            label.AutoLocalize = false
-            label.Text = text
-            label.Size = UDim2.new(1, -20, 0, 14)
-            label.Position = UDim2.new(0, 14, 0, 6)
-            label.BackgroundTransparency = 1
-            label.TextColor3 = colors.text_muted
-            label.Font = Enum.Font.Gotham
-            label.TextSize = 10
-            label.TextXAlignment = Enum.TextXAlignment.Left
+            f.Size = UDim2.new(1, -10, 0, 34)
+            f.Position = UDim2.new(0, 5, 0, 0)
+            f.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            f.BackgroundTransparency = 0.6
+            applyLiquidStyle(f, 14, true)
             
             local tb = Instance.new("TextBox", f)
             tb.AutoLocalize = false
-            tb.Size = UDim2.new(1, -28, 0, 20)
-            tb.Position = UDim2.new(0, 14, 0, 18)
-            tb.Text = ""
-            tb.PlaceholderText = ph
-            tb.PlaceholderColor3 = colors.text_muted
+            tb.Size = UDim2.new(1, -20, 1, 0)
+            tb.Position = UDim2.new(0, 12, 0, 0)
+            tb.Text = " "
+            tb.PlaceholderText = text .. ":  " .. ph
+            tb.PlaceholderColor3 = colors.text_dim
             tb.TextColor3 = colors.text
             tb.BackgroundTransparency = 1
-            tb.Font = Enum.Font.Gotham
+            tb.Font = Enum.Font.Ubuntu
             tb.TextSize = 12
             tb.TextXAlignment = Enum.TextXAlignment.Left
-            
-            tb.FocusLost:Connect(function(enterPressed)
-                if enterPressed then
-                    cb(tb.Text)
-                end
-            end)
-            
-            return f
+            tb.FocusLost:Connect(function() cb(tb.Text) end)
         end
         
-        -- ══════════════════════════════════════
-        -- ВЫПАДАЮЩИЙ СПИСОК
-        -- ═══════════════════════════════════════
         function m:AddDropdown(text, list, cb)
             local isOpened = false
-            local f = Instance.new("Frame", page)
-            f.Size = UDim2.new(1, 0, 0, 42)
+            local f = Instance.new("Frame", page) 
+            f.Size = UDim2.new(1, -10, 0, 34)
+            f.Position = UDim2.new(0, 5, 0, 0)
             f.BackgroundColor3 = colors.element_bg
-            f.BackgroundTransparency = 0
+            f.BackgroundTransparency = colors.element_trans
             f.ClipsDescendants = true
-            applyStyle(f, 12, colors.stroke, 0.75, 1)
-            
-            local label = Instance.new("TextLabel", f)
-            label.AutoLocalize = false
-            label.Text = text
-            label.Size = UDim2.new(1, -60, 0, 14)
-            label.Position = UDim2.new(0, 14, 0, 6)
-            label.BackgroundTransparency = 1
-            label.TextColor3 = colors.text_muted
-            label.Font = Enum.Font.Gotham
-            label.TextSize = 10
-            label.TextXAlignment = Enum.TextXAlignment.Left
+            applyLiquidStyle(f, 14, true)
             
             local btn = Instance.new("TextButton", f)
             btn.AutoLocalize = false
-            btn.Size = UDim2.new(1, -28, 0, 22)
-            btn.Position = UDim2.new(0, 14, 0, 18)
+            btn.Size = UDim2.new(1, 0, 0, 34)
             btn.BackgroundTransparency = 1
-            btn.Text = "Select..."
+            btn.Text = "    " .. text
             btn.TextColor3 = colors.text
-            btn.Font = Enum.Font.Gotham
+            btn.Font = Enum.Font.Ubuntu
             btn.TextSize = 12
             btn.TextXAlignment = Enum.TextXAlignment.Left
             
             local arrow = Instance.new("TextLabel", btn)
-            arrow.Size = UDim2.new(0, 20, 1, 0)
-            arrow.Position = UDim2.new(1, -20, 0, 0)
+            arrow.Size = UDim2.new(0, 34, 1, 0)
+            arrow.Position = UDim2.new(1, -34, 0, 0)
             arrow.Text = "▼"
             arrow.TextColor3 = colors.text_dim
             arrow.BackgroundTransparency = 1
-            arrow.TextSize = 9
-            arrow.Font = Enum.Font.Gotham
+            arrow.TextSize = 10
+            arrow.Font = Enum.Font.Ubuntu
             
             local drop = Instance.new("ScrollingFrame", f)
             drop.Name = "DropList"
-            drop.Position = UDim2.new(0, 8, 0, 42)
-            drop.Size = UDim2.new(1, -16, 0, 0)
+            drop.Position = UDim2.new(0, 10, 0, 34)
+            drop.Size = UDim2.new(1, -20, 0, 0)
             drop.BackgroundTransparency = 1
             drop.ScrollBarThickness = 2
             drop.ScrollBarImageColor3 = colors.accent
             drop.CanvasSize = UDim2.new(0, 0, 0, 0)
             drop.Active = true
             
-            local dropLayout = Instance.new("UIListLayout", drop)
-            dropLayout.Padding = UDim.new(0, 4)
-            dropLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            local layout = Instance.new("UIListLayout", drop)
+            layout.Padding = UDim.new(0, 4)
+            layout.SortOrder = Enum.SortOrder.LayoutOrder
             
-            local dropPadding = Instance.new("UIPadding", drop)
-            dropPadding.PaddingBottom = UDim.new(0, 8)
-            
-            dropLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                drop.CanvasSize = UDim2.new(0, 0, 0, dropLayout.AbsoluteContentSize.Y + 8)
+            local padding = Instance.new("UIPadding", drop)
+            padding.PaddingLeft = UDim.new(0, 15)
+            padding.PaddingTop = UDim.new(0, 10)
+            padding.PaddingRight = UDim.new(0, 8)
+    
+            layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                drop.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y)
             end)
-            
+    
             local function updateList()
-                for _, item in pairs(drop:GetChildren()) do
-                    if item:IsA("TextButton") then item:Destroy() end
+                for _, item in pairs(drop:GetChildren()) do 
+                    if item:IsA("TextButton") then item:Destroy() end 
                 end
                 for _, v in pairs(list) do
                     local o = Instance.new("TextButton", drop)
                     o.AutoLocalize = false
-                    o.Size = UDim2.new(1, 0, 0, 30)
-                    o.Text = "  " .. tostring(v)
-                    o.BackgroundColor3 = colors.bg_tertiary
-                    o.BackgroundTransparency = 0
+                    o.Size = UDim2.new(0.95, 0, 0, 28)
+                    o.Text = tostring(v)
+                    o.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+                    o.BackgroundTransparency = 0.5
                     o.TextColor3 = colors.text
-                    o.Font = Enum.Font.Gotham
+                    o.Font = Enum.Font.Ubuntu
                     o.TextSize = 11
-                    o.TextXAlignment = Enum.TextXAlignment.Left
-                    o.BorderSizePixel = 0
-                    applyStyle(o, 8, colors.stroke, 0.8, 0.8)
-                    addClickEffect(o, 1)
-                    addHoverEffect(o, colors.element_hover, colors.bg_tertiary)
+                    applyLiquidStyle(o, 8, true)
+                    addClickEffect(o)
                     
-                    o.MouseButton1Click:Connect(function()
+                    o.MouseButton1Click:Connect(function() 
                         cb(v)
                         isOpened = false
-                        btn.Text = tostring(v)
-                        f:TweenSize(UDim2.new(1, 0, 0, 42), "Out", "Quart", 0.3, true)
-                        drop:TweenSize(UDim2.new(1, -16, 0, 0), "Out", "Quart", 0.3, true)
-                        TweenService:Create(arrow, TweenInfo.new(0.3), {Rotation = 0}):Play()
+                        btn.Text = "    " .. text .. ":  " .. tostring(v)
+                        f:TweenSize(UDim2.new(1, -10, 0, 34), "Out", "Quart", 0.3, true)
+                        drop:TweenSize(UDim2.new(1, -20, 0, 0), "Out", "Quart", 0.3, true)
+                        TweenService:Create(arrow, TweenInfo.new(0.3), {Rotation = 0}):Play() 
                     end)
                 end
             end
-            
+    
             btn.MouseButton1Click:Connect(function()
                 isOpened = not isOpened
                 if isOpened then updateList() end
                 
-                local targetDropHeight = isOpened and math.min(#list * 34, 150) or 0
-                local targetFrameHeight = isOpened and (42 + targetDropHeight + 8) or 42
+                local targetDropHeight = isOpened and math.min(#list * 32, 150) or 0
+                local targetFrameHeight = isOpened and (34 + targetDropHeight + 10) or 34
                 
-                f:TweenSize(UDim2.new(1, 0, 0, targetFrameHeight), "Out", "Quart", 0.3, true)
-                drop:TweenSize(UDim2.new(1, -16, 0, targetDropHeight), "Out", "Quart", 0.3, true)
+                f:TweenSize(UDim2.new(1, -10, 0, targetFrameHeight), "Out", "Quart", 0.3, true)
+                drop:TweenSize(UDim2.new(1, -20, 0, targetDropHeight), "Out", "Quart", 0.3, true)
                 
                 TweenService:Create(arrow, TweenInfo.new(0.3), {Rotation = isOpened and 180 or 0}):Play()
             end)
             
-            return {
-                Refresh = function(self, newList)
-                    list = newList
-                    if isOpened then updateList() end
-                end
-            }
-        end
-        
-        -- ═══════════════════════════════════════
-        -- СЛАЙДЕР
-        -- ══════════════════════════════════════
-        function m:AddSlider(text, min, max, default, cb)
-            local f = Instance.new("Frame", page)
-            f.Size = UDim2.new(1, 0, 0, 50)
-            f.BackgroundColor3 = colors.element_bg
-            f.BackgroundTransparency = 0
-            applyStyle(f, 12, colors.stroke, 0.75, 1)
-            
-            local label = Instance.new("TextLabel", f)
-            label.AutoLocalize = false
-            label.Text = text
-            label.Size = UDim2.new(1, -60, 0, 14)
-            label.Position = UDim2.new(0, 14, 0, 6)
-            label.BackgroundTransparency = 1
-            label.TextColor3 = colors.text_muted
-            label.Font = Enum.Font.Gotham
-            label.TextSize = 10
-            label.TextXAlignment = Enum.TextXAlignment.Left
-            
-            local valueLabel = Instance.new("TextLabel", f)
-            valueLabel.AutoLocalize = false
-            valueLabel.Text = tostring(default)
-            valueLabel.Size = UDim2.new(0, 50, 0, 14)
-            valueLabel.Position = UDim2.new(1, -60, 0, 6)
-            valueLabel.BackgroundTransparency = 1
-            valueLabel.TextColor3 = colors.accent
-            valueLabel.Font = Enum.Font.GothamBold
-            valueLabel.TextSize = 11
-            valueLabel.TextXAlignment = Enum.TextXAlignment.Right
-            
-            -- Фон слайдера
-            local sliderBg = Instance.new("Frame", f)
-            sliderBg.Size = UDim2.new(1, -28, 0, 6)
-            sliderBg.Position = UDim2.new(0, 14, 0, 28)
-            sliderBg.BackgroundColor3 = colors.toggle_off
-            sliderBg.BorderSizePixel = 0
-            applyStyle(sliderBg, 3, nil, 0, 0)
-            
-            -- Заполненная часть
-            local sliderFill = Instance.new("Frame", sliderBg)
-            sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-            sliderFill.BackgroundColor3 = colors.accent
-            sliderFill.BorderSizePixel = 0
-            applyStyle(sliderFill, 3, nil, 0, 0)
-            
-            -- Ручка слайдера
-            local sliderKnob = Instance.new("Frame", sliderBg)
-            sliderKnob.Size = UDim2.new(0, 14, 0, 14)
-            sliderKnob.Position = UDim2.new((default - min) / (max - min), -7, 0.5, 0)
-            sliderKnob.AnchorPoint = Vector2.new(0, 0.5)
-            sliderKnob.BackgroundColor3 = colors.text
-            sliderKnob.BorderSizePixel = 0
-            applyStyle(sliderKnob, 7, colors.accent, 0.3, 1)
-            
-            local dragging = false
-            local sliderBtn = Instance.new("TextButton", f)
-            sliderBtn.Size = UDim2.new(1, -28, 0, 20)
-            sliderBtn.Position = UDim2.new(0, 14, 0, 23)
-            sliderBtn.BackgroundTransparency = 1
-            sliderBtn.Text = ""
-            
-            sliderBtn.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = true
-                end
-            end)
-            
-            sliderBtn.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = false
-                end
-            end)
-            
-            UserInputService.InputChanged:Connect(function(input)
-                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    local sliderAbs = sliderBg.AbsolutePosition.X
-                    local sliderSize = sliderBg.AbsoluteSize.X
-                    local posX = input.Position.X - sliderAbs
-                    local percent = math.clamp(posX / sliderSize, 0, 1)
-                    local value = math.floor(min + (max - min) * percent)
-                    
-                    sliderFill:TweenSize(UDim2.new(percent, 0, 1, 0), "Out", "Quad", 0.1, true)
-                    sliderKnob:TweenPosition(UDim2.new(percent, -7, 0.5, 0), "Out", "Quad", 0.1, true)
-                    valueLabel.Text = tostring(value)
-                    cb(value)
-                end
-            end)
-            
-            return f
-        end
-        
-        -- ═══════════════════════════════════════
-        -- РАЗДЕЛИТЕЛЬ
-        -- ═══════════════════════════════════════
-        function m:AddDivider()
-            local divider = Instance.new("Frame", page)
-            divider.Size = UDim2.new(1, -20, 0, 1)
-            divider.BackgroundColor3 = colors.stroke
-            divider.BackgroundTransparency = 0.85
-            divider.BorderSizePixel = 0
-            divider.Position = UDim2.new(0, 10, 0, 0)
-            return divider
+            return {Refresh = function(self, newList) 
+                list = newList
+                if isOpened then updateList() end 
+            end}
         end
         
         return m
