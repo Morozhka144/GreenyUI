@@ -368,7 +368,7 @@ function Library:CreateWindow(hubName, btnText)
     tabsTitle.TextColor3 = colors.text_muted
     tabsTitle.Font = Enum.Font.GothamBold
     tabsTitle.TextSize = 10
-    tabsTitle.LetterSpacing = 1.5
+    -- УБРАНО: tabsTitle.LetterSpacing = 1.5
     
     -- Список табов
     local tabBtns = Instance.new("ScrollingFrame", tabsFrame)
@@ -530,7 +530,7 @@ function Library:CreateWindow(hubName, btnText)
             tabIndicator.BackgroundTransparency = 0
             tabBg.BackgroundTransparency = 0.88
         end
-
+        
         local m = {}
         
         -- ═══════════════════════════════════════
@@ -560,7 +560,7 @@ function Library:CreateWindow(hubName, btnText)
             sectionLabel.Font = Enum.Font.GothamBold
             sectionLabel.TextSize = 10
             sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-            sectionLabel.LetterSpacing = 1.2
+            -- УБРАНО: sectionLabel.LetterSpacing = 1.2
             applyStyle(sectionLabel, 6, colors.stroke, 0.7, 0.8)
             
             return sectionFrame
@@ -589,7 +589,7 @@ function Library:CreateWindow(hubName, btnText)
         
         -- ═══════════════════════════════════════
         -- КНОПКА
-        -- ══════════════════════════════════════
+        -- ═══════════════════════════════════════
         function m:AddButton(text, cb)
             local btnFrame = Instance.new("Frame", page)
             btnFrame.Size = UDim2.new(1, 0, 0, 38)
@@ -616,9 +616,9 @@ function Library:CreateWindow(hubName, btnText)
             return btnFrame
         end
         
-        -- ══════════════════════════════════════
-        -- КНОПКА (зелёная, акцентная)
         -- ═══════════════════════════════════════
+        -- КНОПКА (зелёная, акцентная)
+        -- ══════════════════════════════════════
         function m:AddAccentButton(text, cb)
             local btnFrame = Instance.new("Frame", page)
             btnFrame.Size = UDim2.new(1, 0, 0, 38)
@@ -706,7 +706,7 @@ function Library:CreateWindow(hubName, btnText)
         
         -- ═══════════════════════════════════════
         -- ТЕКСТОВОЕ ПОЛЕ
-        -- ══════════════════════════════════════
+        -- ═══════════════════════════════════════
         function m:AddTextBox(text, ph, cb)
             local f = Instance.new("Frame", page)
             f.Size = UDim2.new(1, 0, 0, 42)
@@ -865,7 +865,7 @@ function Library:CreateWindow(hubName, btnText)
         
         -- ═══════════════════════════════════════
         -- СЛАЙДЕР
-        -- ═══════════════════════════════════════
+        -- ══════════════════════════════════════
         function m:AddSlider(text, min, max, default, cb)
             local f = Instance.new("Frame", page)
             f.Size = UDim2.new(1, 0, 0, 50)
@@ -991,4 +991,3 @@ function Library:CreateWindow(hubName, btnText)
 end
 
 return Library
-   
