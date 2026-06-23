@@ -24,6 +24,7 @@ local colors = {
     element_hover = Color3.fromRGB(25, 25, 32),
     danger = Color3.fromRGB(255, 60, 80),
     success = Color3.fromRGB(0, 230, 118),
+    element_trans = 0.3
 }
 
 -- ═══════════════════════════════════════════
@@ -39,6 +40,21 @@ local function applyStyle(obj, radius, strokeColor, strokeTrans, strokeWidth)
         s.Thickness = strokeWidth or 1
         s.Color = strokeColor
         s.Transparency = strokeTrans or 0.7
+        s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        s.Parent = obj
+    end
+end
+
+local function applyLiquidStyle(obj, radius, withStroke)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius)
+    c.Parent = obj
+
+    if withStroke then
+        local s = Instance.new("UIStroke")
+        s.Thickness = 1
+        s.Color = colors.stroke
+        s.Transparency = 0.75
         s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         s.Parent = obj
     end
@@ -535,6 +551,23 @@ function Library:CreateWindow(hubName, btnText)
             addClickEffect(btn)
             btn.MouseButton1Click:Connect(cb)
         end
+
+        function m:AddAccentButton(text, cb)
+            local btn = Instance.new("TextButton", page)
+            btn.AutoLocalize = false
+            btn.Size = UDim2.new(1, -10, 0, 32)
+            btn.Position = UDim2.new(0, 5, 0, 0)
+            btn.BackgroundColor3 = colors.accent
+            btn.BackgroundTransparency = 0.1
+            btn.TextColor3 = colors.bg
+            btn.Text = text
+            btn.Font = Enum.Font.GothamBold
+            btn.TextSize = 12
+            applyLiquidStyle(btn, 14, false)
+            addClickEffect(btn)
+            addHoverEffect(btn, colors.accent_glow, colors.accent)
+            btn.MouseButton1Click:Connect(cb)
+        end
         
         function m:AddToggle(text, cb)
             local f = Instance.new("Frame", page)
@@ -600,7 +633,7 @@ function Library:CreateWindow(hubName, btnText)
             tb.AutoLocalize = false
             tb.Size = UDim2.new(1, -20, 1, 0)
             tb.Position = UDim2.new(0, 12, 0, 0)
-            tb.Text = " "
+            tb.Text = ""
             tb.PlaceholderText = text .. ":  " .. ph
             tb.PlaceholderColor3 = colors.text_dim
             tb.TextColor3 = colors.text
