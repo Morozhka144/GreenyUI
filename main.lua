@@ -209,8 +209,8 @@ function Library:CreateWindow(config)
     local toggleKey   = config.ToggleKey or Enum.KeyCode.RightControl
 
     local Window = {}
-
-    -- ✅ Notify теперь на уровне окна — Win:Notify{...} работает!
+    Window._toggles = {}
+    Window._flags = {}
     function Window:Notify(opts) showNotify(opts) end
 
     local screenGui = create("ScreenGui", {
@@ -447,6 +447,76 @@ function Library:CreateWindow(config)
                 Position=UDim2.new(0,12,0,0), Text=text, TextColor3=Theme.TextDim, Font=Theme.Font,
                 TextSize=13, TextXAlignment=Enum.TextXAlignment.Left, TextWrapped=true, Parent=el})
             return {SetText=function(_,t) lbl.Text=t end, Instance=el}
+        end
+
+        --// KEY BIND
+        local function attachKeybind(parent, xOffset, onTrigger, defaultKey)
+            local currentKey = defaultKey  -- Enum.KeyCode или nil
+            local binding = false
+
+            local box = create("TextButton", {
+                BackgroundColor3 = Theme.Section,
+                Size = UDim2.new(0, 40, 0, 22),
+                Position = UDim2.new(1, -(xOffset + 40), 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Text = currentKey and currentKey.Name or "...",
+                TextColor3 = currentKey and Theme.Accent or Theme.TextDim,
+                Font = Theme.Font,
+                TextSize = 11,
+                AutoButtonColor = false,
+                Parent = parent,
+            })
+            corner(box, 6)
+            local bStroke = stroke(box, Theme.Stroke, 1, 0.4)
+
+            -- авто-ширина под длинные имена клавиш
+            local function fit()
+                local txt = currentKey and currentKey.Name or "..."
+                box.Text = txt
+                local w = math.max(40, #txt * 7 + 14)
+                box.Size = UDim2.new(0, w, 0, 22)
+                box.Position = UDim2.new(1, -(xOffset + w), 0.5, 0)
+                box.TextColor3 = currentKey and Theme.Accent or Theme.TextDim
+            end
+            fit()
+
+            box.MouseButton1Click:Connect(function()
+                if binding then return end
+                binding = true
+                box.Text = "..."
+                box.TextColor3 = Theme.Accent
+                TweenService:Create(bStroke, TW.Fast, { Color = Theme.StrokeAccent, Transparency = 0 }):Play()
+
+                local conn
+                conn = UserInputService.InputBegan:Connect(function(input, gp)
+                    if input.UserInputType == Enum.UserInputType.Keyboard then
+                        if input.KeyCode == Enum.KeyCode.Backspace or input.KeyCode == Enum.KeyCode.Delete then
+                            currentKey = nil           -- сброс бинда
+                        elseif input.KeyCode == Enum.KeyCode.Escape then
+                            -- отмена, оставляем как было
+                        else
+                            currentKey = input.KeyCode -- назначаем
+                        end
+                        binding = false
+                        fit()
+                        TweenService:Create(bStroke, TW.Fast, { Color = Theme.Stroke, Transparency = 0.4 }):Play()
+                        conn:Disconnect()
+                    end
+                end)
+            end)
+
+            -- Глобальный слушатель: нажатие забинженной клавиши -> триггер
+            UserInputService.InputBegan:Connect(function(input, gp)
+                if gp or binding then return end
+                if currentKey and input.KeyCode == currentKey then
+                    if onTrigger then task.spawn(onTrigger) end
+                end
+            end)
+
+            return {
+                Get = function() return currentKey end,
+                Set = function(k) currentKey = k; fit() end,
+            }
         end
 
         --// BUTTON
@@ -889,75 +959,6 @@ function Library:CreateWindow(config)
             return {Set=function(_,k) currentKey=k; keyLabel.Text=k.Name end, Get=function() return currentKey end, Instance=el}
         end
 
-        local function attachKeybind(parent, xOffset, onTrigger, defaultKey)
-            local currentKey = defaultKey  -- Enum.KeyCode или nil
-            local binding = false
-
-            local box = create("TextButton", {
-                BackgroundColor3 = Theme.Section,
-                Size = UDim2.new(0, 40, 0, 22),
-                Position = UDim2.new(1, -(xOffset + 40), 0.5, 0),
-                AnchorPoint = Vector2.new(0, 0.5),
-                Text = currentKey and currentKey.Name or "...",
-                TextColor3 = currentKey and Theme.Accent or Theme.TextDim,
-                Font = Theme.Font,
-                TextSize = 11,
-                AutoButtonColor = false,
-                Parent = parent,
-            })
-            corner(box, 6)
-            local bStroke = stroke(box, Theme.Stroke, 1, 0.4)
-
-            -- авто-ширина под длинные имена клавиш
-            local function fit()
-                local txt = currentKey and currentKey.Name or "..."
-                box.Text = txt
-                local w = math.max(40, #txt * 7 + 14)
-                box.Size = UDim2.new(0, w, 0, 22)
-                box.Position = UDim2.new(1, -(xOffset + w), 0.5, 0)
-                box.TextColor3 = currentKey and Theme.Accent or Theme.TextDim
-            end
-            fit()
-
-            box.MouseButton1Click:Connect(function()
-                if binding then return end
-                binding = true
-                box.Text = "..."
-                box.TextColor3 = Theme.Accent
-                TweenService:Create(bStroke, TW.Fast, { Color = Theme.StrokeAccent, Transparency = 0 }):Play()
-
-                local conn
-                conn = UserInputService.InputBegan:Connect(function(input, gp)
-                    if input.UserInputType == Enum.UserInputType.Keyboard then
-                        if input.KeyCode == Enum.KeyCode.Backspace or input.KeyCode == Enum.KeyCode.Delete then
-                            currentKey = nil           -- сброс бинда
-                        elseif input.KeyCode == Enum.KeyCode.Escape then
-                            -- отмена, оставляем как было
-                        else
-                            currentKey = input.KeyCode -- назначаем
-                        end
-                        binding = false
-                        fit()
-                        TweenService:Create(bStroke, TW.Fast, { Color = Theme.Stroke, Transparency = 0.4 }):Play()
-                        conn:Disconnect()
-                    end
-                end)
-            end)
-
-            -- Глобальный слушатель: нажатие забинженной клавиши -> триггер
-            UserInputService.InputBegan:Connect(function(input, gp)
-                if gp or binding then return end
-                if currentKey and input.KeyCode == currentKey then
-                    if onTrigger then task.spawn(onTrigger) end
-                end
-            end)
-
-            return {
-                Get = function() return currentKey end,
-                Set = function(k) currentKey = k; fit() end,
-            }
-        end
-
         --// COLOR PICKER (RGB слайдеры)
         function Tab:CreateColorPicker(cfg)
             cfg=cfg or {}; local color=cfg.Default or Color3.fromRGB(255,255,255)
@@ -1021,6 +1022,227 @@ function Library:CreateWindow(config)
 
         return Tab
     end -- конец Window:CreateTab
+
+    ----------------------------------------------------------------
+    -- ВСТРОЕННЫЙ ТАБ "SETTINGS" (всегда последний)
+    ----------------------------------------------------------------
+    do
+        local HttpService     = game:GetService("HttpService")
+        local TeleportService = game:GetService("TeleportService")
+        local LocalPlayer     = Players.LocalPlayer
+
+        local SettingsTab = Window:CreateTab("Settings")
+
+        --========================== СЕРВЕР ==========================--
+        SettingsTab:CreateSection("Server")
+
+        SettingsTab:CreateButton({
+            Name = "Rejoin Server",
+            Callback = function()
+                Window:Notify({Title="Server", Content="Rejoining...", Type="Info"})
+                TeleportService:Teleport(game.PlaceId, LocalPlayer)
+            end,
+        })
+
+        SettingsTab:CreateButton({
+            Name = "Server Hop",
+            Callback = function()
+                Window:Notify({Title="Server", Content="Searching for a server...", Type="Info"})
+                local ok, data = pcall(function()
+                    return HttpService:JSONDecode(game:HttpGet(
+                        "https://games.roblox.com/v1/games/"..game.PlaceId..
+                        "/servers/Public?sortOrder=Asc&limit=100"
+                    ))
+                end)
+                if ok and data and data.data then
+                    for _, srv in ipairs(data.data) do
+                        if srv.playing < srv.maxPlayers and srv.id ~= game.JobId then
+                            TeleportService:TeleportToPlaceInstance(game.PlaceId, srv.id, LocalPlayer)
+                            return
+                        end
+                    end
+                end
+                Window:Notify({Title="Server", Content="No servers found!", Type="Error"})
+            end,
+        })
+
+        SettingsTab:CreateButton({
+            Name = "Join Smallest Server",
+            Callback = function()
+                Window:Notify({Title="Server", Content="Finding smallest server...", Type="Info"})
+                local ok, data = pcall(function()
+                    return HttpService:JSONDecode(game:HttpGet(
+                        "https://games.roblox.com/v1/games/"..game.PlaceId..
+                        "/servers/Public?sortOrder=Asc&limit=100"
+                    ))
+                end)
+                if ok and data and data.data then
+                    local best, bestCount = nil, math.huge
+                    for _, srv in ipairs(data.data) do
+                        if srv.playing < srv.maxPlayers and srv.id ~= game.JobId and srv.playing < bestCount then
+                            best, bestCount = srv.id, srv.playing
+                        end
+                    end
+                    if best then
+                        TeleportService:TeleportToPlaceInstance(game.PlaceId, best, LocalPlayer)
+                        return
+                    end
+                end
+                Window:Notify({Title="Server", Content="No servers found!", Type="Error"})
+            end,
+        })
+
+        --========================== КОНФИГ ==========================--
+        SettingsTab:CreateSection("Configuration")
+
+        local CONFIG_FOLDER = "MoroLumina/configs"
+        local hasFS = (writefile ~= nil and readfile ~= nil and listfiles ~= nil)
+
+        -- создаём папку, если поддерживается
+        if hasFS and makefolder then
+            pcall(function()
+                if not isfolder("MoroLumina") then makefolder("MoroLumina") end
+                if not isfolder(CONFIG_FOLDER) then makefolder(CONFIG_FOLDER) end
+            end)
+        end
+
+        local currentConfigName = ""
+
+        -- собрать значения всех Flag-тоглов
+        local function gatherConfig()
+            local out = {}
+            for flag, obj in pairs(Window._flags) do
+                out[flag] = obj.Get()
+            end
+            return out
+        end
+
+        local function applyConfig(tbl)
+            for flag, val in pairs(tbl) do
+                local obj = Window._flags[flag]
+                if obj then obj:Set(val) end
+            end
+        end
+
+        -- список существующих конфигов
+        local function getConfigList()
+            local names = {}
+            if hasFS then
+                local ok, files = pcall(listfiles, CONFIG_FOLDER)
+                if ok and files then
+                    for _, path in ipairs(files) do
+                        local name = path:match("([^/\\]+)%.json$")
+                        if name then table.insert(names, name) end
+                    end
+                end
+            end
+            return names
+        end
+
+        local configDropdown -- forward declare
+
+        local nameBox = SettingsTab:CreateTextbox({
+            Name = "Config Name",
+            Placeholder = "my_config",
+            Callback = function(txt) currentConfigName = txt end,
+        })
+
+        SettingsTab:CreateButton({
+            Name = "Create / Save Config",
+            Callback = function()
+                local name = currentConfigName
+                if name == "" or not name then
+                    Window:Notify({Title="Config", Content="Enter a config name first!", Type="Warning"})
+                    return
+                end
+                if not hasFS then
+                    Window:Notify({Title="Config", Content="File system not supported!", Type="Error"})
+                    return
+                end
+                local data = HttpService:JSONEncode(gatherConfig())
+                local ok = pcall(writefile, CONFIG_FOLDER.."/"..name..".json", data)
+                if ok then
+                    Window:Notify({Title="Config", Content="Saved '"..name.."'", Type="Success"})
+                    if configDropdown then configDropdown:Refresh(getConfigList()) end
+                else
+                    Window:Notify({Title="Config", Content="Failed to save!", Type="Error"})
+                end
+            end,
+        })
+
+        configDropdown = SettingsTab:CreateDropdown({
+            Name = "Config List",
+            Options = getConfigList(),
+            Default = "Select...",
+            Callback = function(v) currentConfigName = v end,
+        })
+
+        SettingsTab:CreateButton({
+            Name = "Load Config",
+            Callback = function()
+                local name = currentConfigName
+                if name == "" or name == "Select..." or not name then
+                    Window:Notify({Title="Config", Content="Select a config first!", Type="Warning"})
+                    return
+                end
+                if not hasFS then return end
+                local path = CONFIG_FOLDER.."/"..name..".json"
+                if not isfile(path) then
+                    Window:Notify({Title="Config", Content="Config not found!", Type="Error"})
+                    return
+                end
+                local ok, data = pcall(function() return HttpService:JSONDecode(readfile(path)) end)
+                if ok and data then
+                    applyConfig(data)
+                    Window:Notify({Title="Config", Content="Loaded '"..name.."'", Type="Success"})
+                else
+                    Window:Notify({Title="Config", Content="Failed to load!", Type="Error"})
+                end
+            end,
+        })
+
+        SettingsTab:CreateButton({
+            Name = "Delete Config",
+            Callback = function()
+                local name = currentConfigName
+                if name == "" or name == "Select..." or not name then
+                    Window:Notify({Title="Config", Content="Select a config first!", Type="Warning"})
+                    return
+                end
+                if not hasFS or not delfile then return end
+                local path = CONFIG_FOLDER.."/"..name..".json"
+                pcall(delfile, path)
+                Window:Notify({Title="Config", Content="Deleted '"..name.."'", Type="Success"})
+                if configDropdown then configDropdown:Refresh(getConfigList()) end
+            end,
+        })
+
+        SettingsTab:CreateButton({
+            Name = "Refresh Config List",
+            Callback = function()
+                if configDropdown then configDropdown:Refresh(getConfigList()) end
+                Window:Notify({Title="Config", Content="List refreshed", Type="Info"})
+            end,
+        })
+
+        --========================== UNLOAD ==========================--
+        SettingsTab:CreateSection("Danger Zone")
+
+        SettingsTab:CreateButton({
+            Name = "Unload Menu",
+            Callback = function()
+                -- 1) Отключаем все тоглы (вызовет их Callback с false)
+                for _, t in ipairs(Window._toggles) do
+                    pcall(function() if t.Get() then t:Set(false) end end)
+                end
+                Window:Notify({Title="MoroLumina", Content="Unloaded. Bye!", Type="Warning"})
+                -- 2) Удаляем GUI через небольшую задержку
+                task.delay(0.4, function()
+                    if Window.Gui then Window.Gui:Destroy() end
+                end)
+            end,
+        })
+    end
 
     return Window
 end -- конец Library:CreateWindow
