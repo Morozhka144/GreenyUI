@@ -118,15 +118,19 @@ end
 
 local function clickPop(obj)
     local base = obj.Size
-    obj.MouseButton1Down:Connect(function()
-        TweenService:Create(obj, TW.Fast, {
-            Size = UDim2.new(base.X.Scale, base.X.Offset - 4, base.Y.Scale, base.Y.Offset - 3)
-        }):Play()
-    end)
+    local function down(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            TweenService:Create(obj, TW.Fast, {
+                Size = UDim2.new(base.X.Scale, base.X.Offset - 4, base.Y.Scale, base.Y.Offset - 3)
+            }):Play()
+        end
+    end
     local function up()
         TweenService:Create(obj, TW.Fast, { Size = base }):Play()
     end
-    obj.MouseButton1Up:Connect(up)
+    obj.InputBegan:Connect(down)
+    obj.InputEnded:Connect(up)
     obj.MouseLeave:Connect(up)
 end
 
@@ -460,6 +464,8 @@ function Library:CreateWindow(config)
     -- Minimize / Toggle key + Close
     ----------------------------------------------------------------
     local isVisible = true
+    local floatBtn
+    local floatLogo
     local function setVisible(state)
         isVisible = state
         if state then
@@ -470,6 +476,9 @@ function Library:CreateWindow(config)
                 GroupTransparency = 0,
                 Size = UDim2.new(0, 620, 0, 420),
             }):Play()
+            if floatLogo then
+                TweenService:Create(floatLogo, TW.Fast, { Rotation = 0 }):Play()
+            end
         else
             local t = TweenService:Create(root, TW.Normal, {
                 GroupTransparency = 1,
@@ -479,9 +488,80 @@ function Library:CreateWindow(config)
             t.Completed:Connect(function()
                 if not isVisible then root.Visible = false end
             end)
+            if floatLogo then
+                TweenService:Create(floatLogo, TW.Fast, { Rotation = 90 }):Play()
+            end
         end
     end
     Window.SetVisible = function(_, s) setVisible(s) end
+
+    ----------------------------------------------------------------
+    -- Floating toggle button (открыть/закрыть меню кликом)
+    ----------------------------------------------------------------
+    local floatBtn = create("TextButton", {
+        Name = "FloatToggle",
+        BackgroundColor3 = Theme.Background,
+        Size = UDim2.new(0, 52, 0, 52),
+        Position = UDim2.new(0, 20, 0, 20),
+        Text = "",
+        AutoButtonColor = false,
+        Parent = screenGui,
+    })
+    corner(floatBtn, 26)
+    stroke(floatBtn, Theme.StrokeAccent, 1.4, 0)
+    addGlow(floatBtn).ImageTransparency = 0.8
+
+    -- логотип внутри кнопки
+    local floatLogo = create("TextLabel", {
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 1, 0),
+        Text = "M",
+        TextColor3 = Theme.Accent,
+        Font = Theme.FontBold,
+        TextSize = 24,
+        Parent = floatBtn,
+    })
+
+    -- ховер-эффект
+    floatBtn.MouseEnter:Connect(function()
+        TweenService:Create(floatBtn, TW.Fast, { Size = UDim2.new(0, 58, 0, 58) }):Play()
+    end)
+    floatBtn.MouseLeave:Connect(function()
+        TweenService:Create(floatBtn, TW.Fast, { Size = UDim2.new(0, 52, 0, 52) }):Play()
+    end)
+
+    -- перетаскивание кнопки (чтобы не мешала)
+    do
+        local dragging, dragStart, startPos, moved
+        floatBtn.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                moved = false
+                dragStart = input.Position
+                startPos = floatBtn.Position
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then dragging = false end
+                end)
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - dragStart
+                if delta.Magnitude > 5 then moved = true end
+                floatBtn.Position = UDim2.new(
+                    startPos.X.Scale, startPos.X.Offset + delta.X,
+                    startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+        end)
+        -- клик (только если не таскали)
+        floatBtn.MouseButton1Click:Connect(function()
+            if not moved then
+                setVisible(not isVisible)
+            end
+        end)
+    end
 
     closeBtn.MouseButton1Click:Connect(function() setVisible(false) end)
 
