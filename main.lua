@@ -1101,6 +1101,26 @@ function Library:CreateWindow(config)
             }
         end
 
+        local DropAPI = {}
+    
+        function DropAPI:Refresh(newOptions)
+            cfg.Options = newOptions or {}
+            -- очистить старые кнопки опций
+            for _, child in pairs(optionsHolder:GetChildren()) do
+                if child:IsA("TextButton") then child:Destroy() end
+            end
+            -- пересобрать
+            buildOptions()  -- вызываем твою же функцию построения
+        end
+    
+        function DropAPI:Set(value)
+            selected = value
+            dropLabel.Text = tostring(value)   -- подгони имена
+            if cfg.Callback then cfg.Callback(value) end
+        end
+    
+        return DropAPI
+
         ------------------------------------------------------------
         -- TEXTBOX
         ------------------------------------------------------------
@@ -1228,6 +1248,80 @@ function Library:CreateWindow(config)
             }
         end
 
+    function Window:Notify(opts)
+        opts = opts or {}
+        local title = opts.Title or "Notify"
+        local content = opts.Content or ""
+        local duration = opts.Duration or 3
+        local nType = opts.Type or "Info"
+
+        local colors = {
+            Success = Color3.fromRGB(50, 220, 100),
+            Error   = Color3.fromRGB(230, 60, 60),
+            Info    = Color3.fromRGB(60, 140, 230),
+            Warning = Color3.fromRGB(230, 180, 50),
+        }
+        local accent = colors[nType] or colors.Info
+
+        local notif = create("Frame", {
+            BackgroundColor3 = Theme.Background,
+            Size = UDim2.new(0, 260, 0, 64),
+            Position = UDim2.new(1, 280, 1, -80),
+            AnchorPoint = Vector2.new(1, 1),
+            Parent = screenGui,
+        })
+        corner(notif, 8)
+        stroke(notif, accent, 1.5, 0.3)
+
+        local bar = create("Frame", {
+            BackgroundColor3 = accent,
+            Size = UDim2.new(0, 4, 1, -12),
+            Position = UDim2.new(0, 6, 0, 6),
+            Parent = notif,
+        })
+        corner(bar, 2)
+
+        local tl = create("TextLabel", {
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 18, 0, 8),
+            Size = UDim2.new(1, -24, 0, 20),
+            Font = Theme.FontBold,
+            TextSize = 15,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextColor3 = accent,
+            Text = title,
+            Parent = notif,
+        })
+
+        local cl = create("TextLabel", {
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 18, 0, 30),
+            Size = UDim2.new(1, -24, 0, 28),
+            Font = Theme.Font,
+            TextSize = 13,
+            TextWrapped = true,
+            TextYAlignment = Enum.TextYAlignment.Top,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextColor3 = Color3.fromRGB(220, 220, 220),
+            Text = content,
+            Parent = notif,
+        })
+
+        -- въезд
+        TweenService:Create(notif, TW.Normal, {
+            Position = UDim2.new(1, -20, 1, -80)
+        }):Play()
+
+        -- выезд
+        task.delay(duration, function()
+            local out = TweenService:Create(notif, TW.Normal, {
+                Position = UDim2.new(1, 280, 1, -80)
+            })
+            out:Play()
+            out.Completed:Connect(function() notif:Destroy() end)
+        end)
+    end
+        
         ------------------------------------------------------------
         -- COLOR PICKER (упрощённый — RGB слайдеры)
         ------------------------------------------------------------
