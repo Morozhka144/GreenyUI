@@ -568,7 +568,6 @@ function Library:CreateWindow(config)
             activeTab = Tab
             page.Visible = true
             page.Position = UDim2.new(0, 0, 0, 10)
-            page.GroupTransparency = nil
             TweenService:Create(page, TW.Normal, { Position = UDim2.new(0, 0, 0, 0) }):Play()
             TweenService:Create(tabBtn, TW.Fast, { BackgroundTransparency = 0.6 }):Play()
             TweenService:Create(tabStroke, TW.Fast, { Transparency = 0.4, Color = Theme.StrokeAccent }):Play()
