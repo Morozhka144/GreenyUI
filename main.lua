@@ -552,36 +552,59 @@ function Library:CreateWindow(config)
                 else valueLbl.Text=tostring(selected) end
             end
 
-            local optButtons={}
+            local optButtons = {}
             local function buildOptions()
-                for _,b in ipairs(optButtons) do b:Destroy() end
+                for _, b in ipairs(optButtons) do b.Btn:Destroy() end 
                 table.clear(optButtons)
-                for _,opt in ipairs(options) do
-                    local oBtn=create("TextButton", {BackgroundColor3=Theme.Section, Size=UDim2.new(1,0,0,30),
-                        Text="", AutoButtonColor=false, Parent=listHolder})
-                    corner(oBtn,8); local oStroke=stroke(oBtn,Theme.Stroke,1,0.5)
-                    local oLbl=create("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(1,-16,1,0), Position=UDim2.new(0,10,0,0),
-                        Text=tostring(opt), TextColor3=Theme.TextDim, Font=Theme.Font, TextSize=12,
-                        TextXAlignment=Enum.TextXAlignment.Left, Parent=oBtn})
+                for _, opt in ipairs(options) do
+                    local oBtn = create("TextButton", {
+                        BackgroundColor3 = Theme.Section,
+                        Size = UDim2.new(1, 0, 0, 30),
+                        Text = "",
+                        AutoButtonColor = false,
+                        Parent = listHolder,
+                    })
+                    corner(oBtn, 8)
+                    local oStroke = stroke(oBtn, Theme.Stroke, 1, 0.5)
+                    local oLbl = create("TextLabel", {
+                        BackgroundTransparency = 1,
+                        Size = UDim2.new(1, -16, 1, 0),
+                        Position = UDim2.new(0, 10, 0, 0),
+                        Text = tostring(opt),
+                        TextColor3 = Theme.TextDim,
+                        Font = Theme.Font,
+                        TextSize = 12,
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        Parent = oBtn,
+                    })
                     local function highlight()
-                        local on=multi and selected[opt] or (selected==opt)
-                        TweenService:Create(oStroke,TW.Fast,{Color=on and Theme.StrokeAccent or Theme.Stroke, Transparency=on and 0.2 or 0.5}):Play()
-                        TweenService:Create(oLbl,TW.Fast,{TextColor3=on and Theme.Accent or Theme.TextDim}):Play()
+                        local on = multi and selected[opt] or (selected == opt)
+                        TweenService:Create(oStroke, TW.Fast, {
+                            Color = on and Theme.StrokeAccent or Theme.Stroke,
+                            Transparency = on and 0.2 or 0.5,
+                        }):Play()
+                        TweenService:Create(oLbl, TW.Fast, {
+                            TextColor3 = on and Theme.Accent or Theme.TextDim
+                        }):Play()
                     end
                     highlight()
                     oBtn.MouseButton1Click:Connect(function()
-                        if multi then selected[opt]=not selected[opt] else selected=opt end
+                        if multi then
+                            selected[opt] = not selected[opt]
+                        else
+                            selected = opt
+                        end
                         refreshText()
-                        for _,b in ipairs(optButtons) do if b.Refresh then b.Refresh() end end
-                        if cfg.Callback then task.spawn(cfg.Callback,selected) end
+                        for _, b in ipairs(optButtons) do b.Refresh() end  -- ✅ .Refresh из таблицы
+                        if cfg.Callback then task.spawn(cfg.Callback, selected) end
                         if not multi then
-                            open=false
-                            TweenService:Create(el,TW.Normal,{Size=UDim2.new(1,0,0,42)}):Play()
-                            TweenService:Create(arrow,TW.Fast,{Rotation=0}):Play()
+                            open = false
+                            TweenService:Create(el, TW.Normal, { Size = UDim2.new(1, 0, 0, 42) }):Play()
+                            TweenService:Create(arrow, TW.Fast, { Rotation = 0 }):Play()
                         end
                     end)
-                    oBtn.Refresh=highlight
-                    table.insert(optButtons,oBtn)
+                    -- ✅ храним в таблице, а НЕ в Instance
+                    table.insert(optButtons, { Btn = oBtn, Refresh = highlight })
                 end
             end
             buildOptions()
@@ -595,10 +618,10 @@ function Library:CreateWindow(config)
             ripple(el)
 
             return {
-                Set=function(_,v) selected=v; refreshText(); for _,b in ipairs(optButtons) do b.Refresh() end end,
-                Get=function() return selected end,
-                Refresh=function(_,newOpts) options=newOpts or {}; buildOptions(); refreshText() end,
-                Instance=el,
+                Set = function(_, v) selected = v; refreshText(); for _, b in ipairs(optButtons) do b.Refresh() end end,
+                Get = function() return selected end,
+                Refresh = function(_, newOpts) options = newOpts or {}; buildOptions(); refreshText() end,
+                Instance = el,
             }
         end
 
