@@ -755,7 +755,7 @@ function Library:CreateWindow(config)
                 Text=type(selected)=="table" and "None" or tostring(selected), TextColor3=Theme.TextDim, Font=Theme.Font,
                 TextSize=13, TextXAlignment=Enum.TextXAlignment.Right, TextTruncate=Enum.TextTruncate.AtEnd, Parent=header})
             local arrow = create("TextLabel", {BackgroundTransparency = 1, Size = UDim2.new(0, 24, 1, 0), Position = UDim2.new(1, -30, 0, 0),
-                Text = "▾", TextColor3 = Theme.Accent, Font = Theme.FontBold, TextSize = 14, Rotation = 90, Parent = header})
+                Text = "v", TextColor3 = Theme.Accent, Font = Theme.FontBold, TextSize = 14, Rotation = 90, Parent = header})
             local listHolder=create("Frame", {BackgroundTransparency=1, Size=UDim2.new(1,-16,0,0), Position=UDim2.new(0,8,0,44),
                 AutomaticSize=Enum.AutomaticSize.Y, Parent=el})
             create("UIListLayout", {Padding=UDim.new(0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=listHolder})
