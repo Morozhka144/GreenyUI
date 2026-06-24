@@ -1076,57 +1076,211 @@ function Library:CreateWindow(config)
             }
         end
 
-local Library = loadstring(game:HttpGet("YOUR_RAW_URL"))()
+        ------------------------------------------------------------
+        -- KEYBIND
+        ------------------------------------------------------------
+        function Tab:CreateKeybind(cfg)
+            cfg = cfg or {}
+            local currentKey = cfg.Default
+            local listening = false
+            local el = baseElement(42)
 
-local Window = Library:CreateWindow({
-    Title = "MoroLumina",
-    SubTitle = "v1.0 • emerald build",
-    ToggleKey = Enum.KeyCode.RightControl,
-})
+            local btn = create("TextButton", {
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 1, 0),
+                Text = "",
+                AutoButtonColor = false,
+                Parent = el,
+            })
+            create("TextLabel", {
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, -110, 1, 0),
+                Position = UDim2.new(0, 12, 0, 0),
+                Text = cfg.Name or "Keybind",
+                TextColor3 = Theme.Text,
+                Font = Theme.Font,
+                TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = btn,
+            })
 
-local Tab = Window:CreateTab("Main")
+            local keyBox = create("Frame", {
+                BackgroundColor3 = Theme.Section,
+                Size = UDim2.new(0, 90, 0, 28),
+                Position = UDim2.new(1, -102, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Parent = el,
+            })
+            corner(keyBox, 8)
+            local kStroke = stroke(keyBox, Theme.Stroke, 1, 0)
+            local keyLabel = create("TextLabel", {
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 1, 0),
+                Text = currentKey and currentKey.Name or "None",
+                TextColor3 = Theme.Accent,
+                Font = Theme.FontBold,
+                TextSize = 12,
+                Parent = keyBox,
+            })
 
-Tab:CreateSection("Combat")
+            btn.MouseButton1Click:Connect(function()
+                listening = true
+                keyLabel.Text = "..."
+                TweenService:Create(kStroke, TW.Fast, { Color = Theme.StrokeAccent, Transparency = 0.2 }):Play()
+            end)
 
-Tab:CreateToggle({
-    Name = "Aimbot",
-    Default = false,
-    Callback = function(v) print("Aimbot:", v) end,
-})
+            UserInputService.InputBegan:Connect(function(input, gpe)
+                if listening and input.UserInputType == Enum.UserInputType.Keyboard then
+                    listening = false
+                    currentKey = input.KeyCode
+                    keyLabel.Text = currentKey.Name
+                    TweenService:Create(kStroke, TW.Fast, { Color = Theme.Stroke, Transparency = 0 }):Play()
+                elseif not gpe and not listening and currentKey
+                    and input.KeyCode == currentKey then
+                    if cfg.Callback then task.spawn(cfg.Callback) end
+                end
+            end)
 
-Tab:CreateSlider({
-    Name = "FOV",
-    Min = 0, Max = 360, Default = 90, Suffix = "°",
-    Callback = function(v) print("FOV:", v) end,
-})
+            ripple(el)
+            return {
+                Set = function(_, k) currentKey = k; keyLabel.Text = k.Name end,
+                Get = function() return currentKey end,
+                Instance = el,
+            }
+        end
 
-Tab:CreateDropdown({
-    Name = "Target Part",
-    Options = {"Head", "Torso", "HumanoidRootPart"},
-    Default = "Head",
-    Callback = function(o) print("Target:", o) end,
-})
+        ------------------------------------------------------------
+        -- COLOR PICKER (упрощённый — RGB слайдеры)
+        ------------------------------------------------------------
+        function Tab:CreateColorPicker(cfg)
+            cfg = cfg or {}
+            local color = cfg.Default or Color3.fromRGB(255, 255, 255)
+            local open = false
+            local el = baseElement(42)
+            el.ClipsDescendants = true
 
-Tab:CreateKeybind({
-    Name = "Panic Hide",
-    Default = Enum.KeyCode.End,
-    Callback = function() Window:SetVisible(false) end,
-})
+            local header = create("TextButton", {
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 42),
+                Text = "",
+                AutoButtonColor = false,
+                Parent = el,
+            })
+            create("TextLabel", {
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, -70, 1, 0),
+                Position = UDim2.new(0, 12, 0, 0),
+                Text = cfg.Name or "Color",
+                TextColor3 = Theme.Text,
+                Font = Theme.Font,
+                TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = header,
+            })
+            local preview = create("Frame", {
+                BackgroundColor3 = color,
+                Size = UDim2.new(0, 40, 0, 22),
+                Position = UDim2.new(1, -52, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Parent = el,
+            })
+            corner(preview, 6)
+            stroke(preview, Theme.Stroke, 1, 0)
 
-Tab:CreateColorPicker({
-    Name = "ESP Color",
-    Default = Color3.fromRGB(0, 225, 134),
-    Callback = function(c) print(c) end,
-})
+            local holder = create("Frame", {
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 12, 0, 48),
+                Size = UDim2.new(1, -24, 0, 90),
+                Parent = el,
+            })
+            create("UIListLayout", { Padding = UDim.new(0, 6), Parent = holder })
 
-Tab:CreateButton({
-    Name = "Bypass complete",
-    Callback = function()
-        Window:Notify({
-            Title = "Bypass complete",
-            Content = "Close anytime · 33.52",
-            Type = "Success",
-            Duration = 5,
-        })
-    end,
-})
+            local r, g, b = math.floor(color.R*255), math.floor(color.G*255), math.floor(color.B*255)
+            local function apply()
+                color = Color3.fromRGB(r, g, b)
+                preview.BackgroundColor3 = color
+                if cfg.Callback then task.spawn(cfg.Callback, color) end
+            end
+
+            local function makeChannel(name, getv, setv)
+                local row = create("Frame", {
+                    BackgroundColor3 = Theme.Section,
+                    Size = UDim2.new(1, 0, 0, 24),
+                    Parent = holder,
+                })
+                corner(row, 6)
+                create("TextLabel", {
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(0, 20, 1, 0),
+                    Position = UDim2.new(0, 8, 0, 0),
+                    Text = name,
+                    TextColor3 = Theme.Accent,
+                    Font = Theme.FontBold,
+                    TextSize = 12,
+                    Parent = row,
+                })
+                local barBack = create("Frame", {
+                    BackgroundColor3 = Theme.ToggleOff,
+                    Size = UDim2.new(1, -40, 0, 5),
+                    Position = UDim2.new(0, 32, 0.5, 0),
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    Parent = row,
+                })
+                corner(barBack, 3)
+                local fill = create("Frame", {
+                    BackgroundColor3 = Theme.Accent,
+                    Size = UDim2.new(getv()/255, 0, 1, 0),
+                    Parent = barBack,
+                })
+                corner(fill, 3)
+                local dragging = false
+                local function upd(x)
+                    local rel = math.clamp((x - barBack.AbsolutePosition.X) / barBack.AbsoluteSize.X, 0, 1)
+                    setv(math.floor(rel*255))
+                    fill.Size = UDim2.new(rel, 0, 1, 0)
+                    apply()
+                end
+                barBack.InputBegan:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1
+                    or i.UserInputType == Enum.UserInputType.Touch then dragging = true; upd(i.Position.X) end
+                end)
+                UserInputService.InputEnded:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1
+                    or i.UserInputType == Enum.UserInputType.Touch then dragging = false end
+                end)
+                UserInputService.InputChanged:Connect(function(i)
+                    if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement
+                    or i.UserInputType == Enum.UserInputType.Touch) then upd(i.Position.X) end
+                end)
+            end
+
+            makeChannel("R", function() return r end, function(v) r = v end)
+            makeChannel("G", function() return g end, function(v) g = v end)
+            makeChannel("B", function() return b end, function(v) b = v end)
+
+            header.MouseButton1Click:Connect(function()
+                open = not open
+                TweenService:Create(el, TW.Normal, {
+                    Size = UDim2.new(1, 0, 0, open and 146 or 42)
+                }):Play()
+            end)
+            ripple(el)
+
+            return {
+                Set = function(_, c)
+                    color = c
+                    r, g, b = math.floor(c.R*255), math.floor(c.G*255), math.floor(c.B*255)
+                    preview.BackgroundColor3 = c
+                end,
+                Get = function() return color end,
+                Instance = el,
+            }
+        end
+
+        return Tab
+    end -- конец Window:CreateTab
+
+    return Window
+end -- конец Library:CreateWindow
+
+return Library
