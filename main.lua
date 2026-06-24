@@ -451,42 +451,113 @@ function Library:CreateWindow(config)
 
         --// BUTTON
         function Tab:CreateButton(cfg)
-            cfg=cfg or {}; local el=baseElement(42)
-            local btn=create("TextButton", {BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="", AutoButtonColor=false, Parent=el})
-            create("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(1,-50,1,0), Position=UDim2.new(0,12,0,0),
-                Text=cfg.Name or "Button", TextColor3=Theme.Text, Font=Theme.Font, TextSize=13,
-                TextXAlignment=Enum.TextXAlignment.Left, Parent=btn})
-            create("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(0,30,1,0), Position=UDim2.new(1,-38,0,0),
-                Text="→", TextColor3=Theme.Accent, Font=Theme.FontBold, TextSize=16, Parent=btn})
-            ripple(el); clickPop(el)
-            btn.MouseButton1Click:Connect(function() if cfg.Callback then task.spawn(cfg.Callback) end end)
-            return el
+            cfg = cfg or {}
+            local el = baseElement(40)
+
+            create("TextLabel", {
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, cfg.Keybind and -70 or -24, 1, 0),
+                Position = UDim2.new(0, 12, 0, 0),
+                Text = cfg.Name or "Button",
+                TextColor3 = Theme.Text, Font = Theme.Font, TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left, Parent = el,
+            })
+
+            local function fire()
+                if cfg.Callback then task.spawn(cfg.Callback) end
+            end
+
+            -- ✅ ВСТРОЕННЫЙ КЕЙБИНД
+            local kb
+            if cfg.Keybind then
+                kb = attachKeybind(el, 12, fire, cfg.DefaultKey)
+            end
+
+            local btn = create("TextButton", {
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, cfg.Keybind and -60 or 0, 1, 0),
+                Text = "", AutoButtonColor = false, Parent = el,
+            })
+            btn.MouseButton1Click:Connect(fire)
+            ripple(el)
+
+            return {
+                Fire = fire,
+                SetKey = function(_, k) if kb then kb.Set(k) end end,
+                GetKey = function() return kb and kb.Get() end,
+                Instance = el,
+            }
         end
 
         --// TOGGLE
         function Tab:CreateToggle(cfg)
-            cfg=cfg or {}; local state=cfg.Default or false; local el=baseElement(42)
-            local btn=create("TextButton", {BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="", AutoButtonColor=false, Parent=el})
-            create("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(1,-70,1,0), Position=UDim2.new(0,12,0,0),
-                Text=cfg.Name or "Toggle", TextColor3=Theme.Text, Font=Theme.Font, TextSize=13,
-                TextXAlignment=Enum.TextXAlignment.Left, Parent=btn})
-            local track=create("Frame", {BackgroundColor3=state and Theme.Accent or Theme.ToggleOff,
-                Size=UDim2.new(0,42,0,22), Position=UDim2.new(1,-54,0.5,0), AnchorPoint=Vector2.new(0,0.5), Parent=el})
-            corner(track,11)
-            local knob=create("Frame", {BackgroundColor3=Color3.fromRGB(255,255,255), Size=UDim2.new(0,16,0,16),
-                Position=state and UDim2.new(1,-19,0.5,0) or UDim2.new(0,3,0.5,0), AnchorPoint=Vector2.new(0,0.5), Parent=track})
-            corner(knob,8); ripple(el)
-            local function set(v,fire)
-                state=v
-                TweenService:Create(track,TW.Fast,{BackgroundColor3=state and Theme.Accent or Theme.ToggleOff}):Play()
-                TweenService:Create(knob,TW.Bounce,{Position=state and UDim2.new(1,-19,0.5,0) or UDim2.new(0,3,0.5,0)}):Play()
-                if fire and cfg.Callback then task.spawn(cfg.Callback,state) end
-            end
-            btn.MouseButton1Click:Connect(function() set(not state,true) end)
-            if state and cfg.Callback then task.spawn(cfg.Callback,true) end
-            return {Set=function(_,v) set(v,true) end, Get=function() return state end, Instance=el}
-        end
+            cfg = cfg or {}
+            local state = cfg.Default or false
+            local el = baseElement(42)
 
+            create("TextLabel", {
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, -110, 1, 0),
+                Position = UDim2.new(0, 12, 0, 0),
+                Text = cfg.Name or "Toggle",
+                TextColor3 = Theme.Text, Font = Theme.Font, TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left, Parent = el,
+            })
+
+            -- сам переключатель справа
+            local track = create("Frame", {
+                BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff,
+                Size = UDim2.new(0, 40, 0, 22),
+                Position = UDim2.new(1, -52, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5), Parent = el,
+            })
+            corner(track, 11)
+            local knob = create("Frame", {
+                BackgroundColor3 = Color3.fromRGB(255,255,255),
+                Size = UDim2.new(0, 16, 0, 16),
+                Position = state and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5), Parent = track,
+            })
+            corner(knob, 8)
+
+            local function update()
+                TweenService:Create(track, TW.Fast, {
+                    BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff
+                }):Play()
+                TweenService:Create(knob, TW.Normal, {
+                    Position = state and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+                }):Play()
+            end
+
+            local function toggle()
+                state = not state
+                update()
+                if cfg.Callback then task.spawn(cfg.Callback, state) end
+            end
+
+            -- ✅ ВСТРОЕННЫЙ КЕЙБИНД (если cfg.Keybind == true)
+            local kb
+            if cfg.Keybind then
+                -- xOffset = 62 чтобы поле было ЛЕВЕЕ тогла (тогл занимает ~52px справа)
+                kb = attachKeybind(el, 62, toggle, cfg.DefaultKey)
+            end
+
+            local btn = create("TextButton", {
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, cfg.Keybind and -110 or 0, 1, 0),
+                Text = "", AutoButtonColor = false, Parent = el,
+            })
+            btn.MouseButton1Click:Connect(toggle)
+            ripple(el)
+
+            return {
+                Set = function(_, v) state = v; update() end,
+                Get = function() return state end,
+                SetKey = function(_, k) if kb then kb.Set(k) end end,
+                GetKey = function() return kb and kb.Get() end,
+                Instance = el,
+            }
+        end
         --// SLIDER
         function Tab:CreateSlider(cfg)
             cfg=cfg or {}; local min=cfg.Min or 0; local max=cfg.Max or 100
@@ -527,6 +598,150 @@ function Library:CreateWindow(config)
             end, Get=function() return value end, Instance=el}
         end
 
+        function Tab:CreateSliderInput(cfg)
+            cfg = cfg or {}
+            local min      = cfg.Min or 0
+            local max      = cfg.Max or 100
+            local decimals = cfg.Decimals or 0
+            local value    = math.clamp(cfg.Default or min, min, max)
+            local suffix   = cfg.Suffix or ""
+
+            local el = baseElement(64)  -- повыше: название + поле сверху, ползунок снизу
+
+            -- округление по decimals
+            local function round(v)
+                local m = 10 ^ decimals
+                return math.floor(v * m + 0.5) / m
+            end
+
+            -- Название (слева сверху)
+            create("TextLabel", {
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, -90, 0, 22),
+                Position = UDim2.new(0, 12, 0, 6),
+                Text = cfg.Name or "Slider",
+                TextColor3 = Theme.Text, Font = Theme.Font, TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left, Parent = el,
+            })
+
+            -- Поле ввода (справа сверху)
+            local inputBox = create("TextBox", {
+                BackgroundColor3 = Theme.Section,
+                Size = UDim2.new(0, 70, 0, 24),
+                Position = UDim2.new(1, -82, 0, 5),
+                Text = tostring(round(value)) .. suffix,
+                TextColor3 = Theme.Accent,
+                Font = Theme.Font, TextSize = 12,
+                ClearTextOnFocus = false,
+                Parent = el,
+            })
+            corner(inputBox, 6)
+            local inStroke = stroke(inputBox, Theme.Stroke, 1, 0.4)
+
+            -- Дорожка ползунка (снизу)
+            local track = create("Frame", {
+                BackgroundColor3 = Theme.ToggleOff,
+                Size = UDim2.new(1, -24, 0, 6),
+                Position = UDim2.new(0, 12, 1, -16),
+                Parent = el,
+            })
+            corner(track, 3)
+
+            -- Заполнение
+            local fill = create("Frame", {
+                BackgroundColor3 = Theme.Accent,
+                Size = UDim2.new((value - min) / (max - min), 0, 1, 0),
+                Parent = track,
+            })
+            corner(fill, 3)
+
+            -- Кружок-ручка
+            local knob = create("Frame", {
+                BackgroundColor3 = Color3.fromRGB(255,255,255),
+                Size = UDim2.new(0, 12, 0, 12),
+                Position = UDim2.new((value - min) / (max - min), -6, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Parent = track,
+            })
+            corner(knob, 6)
+
+            -- ===== ОБНОВЛЕНИЕ ВИЗУАЛА =====
+            local function updateVisual(animate)
+                local pct = (value - min) / (max - min)
+                local tw = animate and TW.Fast or TweenInfo.new(0)
+                TweenService:Create(fill, tw, { Size = UDim2.new(pct, 0, 1, 0) }):Play()
+                TweenService:Create(knob, tw, { Position = UDim2.new(pct, -6, 0.5, 0) }):Play()
+            end
+
+            -- ===== УСТАНОВКА ЗНАЧЕНИЯ (общая точка) =====
+            local function setValue(v, fromInput, animate)
+                value = math.clamp(round(v), min, max)
+                updateVisual(animate)
+                -- обновляем поле, только если меняли НЕ через поле (чтобы не мешать вводу)
+                if not fromInput then
+                    inputBox.Text = tostring(value) .. suffix
+                end
+                if cfg.Callback then task.spawn(cfg.Callback, value) end
+            end
+
+            -- ===== ПЕРЕТАСКИВАНИЕ ПОЛЗУНКА =====
+            local dragging = false
+            local function setFromX(x)
+                local rel = math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+                setValue(min + rel * (max - min), false, false)
+            end
+
+            track.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1
+                or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true
+                    setFromX(input.Position.X)
+                end
+            end)
+            knob.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1
+                or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true
+                end
+            end)
+            UserInputService.InputChanged:Connect(function(input)
+                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+                or input.UserInputType == Enum.UserInputType.Touch) then
+                    setFromX(input.Position.X)
+                end
+            end)
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1
+                or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = false
+                end
+            end)
+
+            -- ===== ВВОД В ПОЛЕ =====
+            inputBox.Focused:Connect(function()
+                TweenService:Create(inStroke, TW.Fast, { Color = Theme.StrokeAccent, Transparency = 0 }):Play()
+            end)
+            inputBox.FocusLost:Connect(function()
+                TweenService:Create(inStroke, TW.Fast, { Color = Theme.Stroke, Transparency = 0.4 }):Play()
+                -- вытаскиваем число из текста (убираем suffix и мусор)
+                local num = tonumber(inputBox.Text:gsub("[^%-%d%.]", ""))
+                if num then
+                    setValue(num, true, true)        -- двигаем ползунок плавно
+                    inputBox.Text = tostring(value) .. suffix  -- нормализуем (clamp/round)
+                else
+                    inputBox.Text = tostring(value) .. suffix  -- вернуть как было
+                end
+            end)
+
+            updateVisual(false)
+
+            return {
+                Set = function(_, v) setValue(v, false, true) end,
+                Get = function() return value end,
+                Instance = el,
+            }
+        end
+
         --// DROPDOWN (с рабочим :Refresh)
         function Tab:CreateDropdown(cfg)
             cfg=cfg or {}; local options=cfg.Options or {}; local multi=cfg.Multi or false
@@ -539,8 +754,8 @@ function Library:CreateWindow(config)
             local valueLbl=create("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(0.5,-40,1,0), Position=UDim2.new(0.5,0,0,0),
                 Text=type(selected)=="table" and "None" or tostring(selected), TextColor3=Theme.TextDim, Font=Theme.Font,
                 TextSize=13, TextXAlignment=Enum.TextXAlignment.Right, TextTruncate=Enum.TextTruncate.AtEnd, Parent=header})
-            local arrow=create("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(0,24,1,0), Position=UDim2.new(1,-30,0,0),
-                Text="▾", TextColor3=Theme.Accent, Font=Theme.FontBold, TextSize=14, Parent=header})
+            local arrow = create("TextLabel", {BackgroundTransparency = 1, Size = UDim2.new(0, 24, 1, 0), Position = UDim2.new(1, -30, 0, 0),
+                Text = ">", TextColor3 = Theme.Accent, Font = Theme.FontBold, TextSize = 14,Rotation = 90, Parent = header})
             local listHolder=create("Frame", {BackgroundTransparency=1, Size=UDim2.new(1,-16,0,0), Position=UDim2.new(0,8,0,44),
                 AutomaticSize=Enum.AutomaticSize.Y, Parent=el})
             create("UIListLayout", {Padding=UDim.new(0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=listHolder})
@@ -672,6 +887,75 @@ function Library:CreateWindow(config)
             end)
             ripple(el)
             return {Set=function(_,k) currentKey=k; keyLabel.Text=k.Name end, Get=function() return currentKey end, Instance=el}
+        end
+
+        local function attachKeybind(parent, xOffset, onTrigger, defaultKey)
+            local currentKey = defaultKey  -- Enum.KeyCode или nil
+            local binding = false
+
+            local box = create("TextButton", {
+                BackgroundColor3 = Theme.Section,
+                Size = UDim2.new(0, 40, 0, 22),
+                Position = UDim2.new(1, -(xOffset + 40), 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Text = currentKey and currentKey.Name or "...",
+                TextColor3 = currentKey and Theme.Accent or Theme.TextDim,
+                Font = Theme.Font,
+                TextSize = 11,
+                AutoButtonColor = false,
+                Parent = parent,
+            })
+            corner(box, 6)
+            local bStroke = stroke(box, Theme.Stroke, 1, 0.4)
+
+            -- авто-ширина под длинные имена клавиш
+            local function fit()
+                local txt = currentKey and currentKey.Name or "..."
+                box.Text = txt
+                local w = math.max(40, #txt * 7 + 14)
+                box.Size = UDim2.new(0, w, 0, 22)
+                box.Position = UDim2.new(1, -(xOffset + w), 0.5, 0)
+                box.TextColor3 = currentKey and Theme.Accent or Theme.TextDim
+            end
+            fit()
+
+            box.MouseButton1Click:Connect(function()
+                if binding then return end
+                binding = true
+                box.Text = "..."
+                box.TextColor3 = Theme.Accent
+                TweenService:Create(bStroke, TW.Fast, { Color = Theme.StrokeAccent, Transparency = 0 }):Play()
+
+                local conn
+                conn = UserInputService.InputBegan:Connect(function(input, gp)
+                    if input.UserInputType == Enum.UserInputType.Keyboard then
+                        if input.KeyCode == Enum.KeyCode.Backspace or input.KeyCode == Enum.KeyCode.Delete then
+                            currentKey = nil           -- сброс бинда
+                        elseif input.KeyCode == Enum.KeyCode.Escape then
+                            -- отмена, оставляем как было
+                        else
+                            currentKey = input.KeyCode -- назначаем
+                        end
+                        binding = false
+                        fit()
+                        TweenService:Create(bStroke, TW.Fast, { Color = Theme.Stroke, Transparency = 0.4 }):Play()
+                        conn:Disconnect()
+                    end
+                end)
+            end)
+
+            -- Глобальный слушатель: нажатие забинженной клавиши -> триггер
+            UserInputService.InputBegan:Connect(function(input, gp)
+                if gp or binding then return end
+                if currentKey and input.KeyCode == currentKey then
+                    if onTrigger then task.spawn(onTrigger) end
+                end
+            end)
+
+            return {
+                Get = function() return currentKey end,
+                Set = function(k) currentKey = k; fit() end,
+            }
         end
 
         --// COLOR PICKER (RGB слайдеры)
