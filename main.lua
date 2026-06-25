@@ -942,6 +942,36 @@ function Library:CreateWindow(config)
                     local rel=math.clamp((x-barBack.AbsolutePosition.X)/barBack.AbsoluteSize.X,0,1)
                     setv(math.floor(rel*255)); fill.Size=UDim2.new(rel,0,1,0); apply()
                 end
+                barBack.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dragging=true; upd(i.Position.X) end end)
+                UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dragging=false end end)
+                UserInputService.InputChanged:Connect(function(i) if dragging and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then upd(i.Position.X) end end)
+                channels[name] = function() fill.Size = UDim2.new(getv()/255, 0, 1, 0) end
+            end
+
+            makeChannel("R", function() return r end, function(v) r=v end)
+            makeChannel("G", function() return g end, function(v) g=v end)
+            makeChannel("B", function() return b end, function(v) b=v end)
+
+            header.MouseButton1Click:Connect(function()
+                open=not open
+                TweenService:Create(el,TW.Normal,{Size=UDim2.new(1,0,0,open and 146 or 42)}):Play()
+            end)
+            ripple(el)
+
+            return regFlag(cfg, {
+                Set=function(_,c)
+                    color=c; r,g,b=math.floor(c.R*255),math.floor(c.G*255),math.floor(c.B*255)
+                    preview.BackgroundColor3=c
+                    for _, refresh in pairs(channels) do refresh() end
+                    if cfg.Callback then task.spawn(cfg.Callback,color) end
+                end,
+                Get=function() return color end,
+                Instance=el,
+            })
+        end          -- ← конец Tab:CreateColorPicker
+
+        return Tab
+    end              -- ← конец Window:CreateTab
     ----------------------------------------------------------------
     -- ВСТРОЕННЫЙ ТАБ "SETTINGS"
     ----------------------------------------------------------------
