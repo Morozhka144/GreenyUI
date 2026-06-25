@@ -1,14 +1,4 @@
---[[
-    ███╗   ███╗ ██████╗ ██████╗  ██████╗ ██╗     ██╗   ██╗███╗   ███╗██╗███╗   ██╗ █████╗
-    ████╗ ████║██╔═══██╗██╔══██╗██╔═══██╗██║     ██║   ██║████╗ ████║██║████╗  ██║██╔══██╗
-    ██╔████╔██║██║   ██║██████╔╝██║   ██║██║     ██║   ██║██╔████╔██║██║██╔██╗ ██║███████║
-    ██║╚██╔╝██║██║   ██║██╔══██╗██║   ██║██║     ██║   ██║██║╚██╔╝██║██║██║╚██╗██║██╔══██║
-    ██║ ╚═╝ ██║╚██████╔╝██║  ██║╚██████╔╝███████╗╚██████╔╝██║ ╚═╝ ██║██║██║ ╚████║██║  ██║
-    ╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝
-    A modern emerald-themed Luau UI Framework. Pure GuiObjects + TweenService.
---]]
-
---[[ MoroLumina UI — Emerald Edition (Fixed + Polished) ]]--
+--[[ MoroLumina UI — Emerald Edition (Fixed + Configs) ]]--
 local Library = {}
 Library.__index = Library
 
@@ -53,7 +43,6 @@ local function corner(p, r) return create("UICorner", {CornerRadius=UDim.new(0,r
 local function stroke(p, c, t, tr) return create("UIStroke", {Color=c or Theme.Stroke, Thickness=t or 1, Transparency=tr or 0, ApplyStrokeMode=Enum.ApplyStrokeMode.Border, Parent=p}) end
 local function padding(p, a) return create("UIPadding", {PaddingTop=UDim.new(0,a),PaddingBottom=UDim.new(0,a),PaddingLeft=UDim.new(0,a),PaddingRight=UDim.new(0,a), Parent=p}) end
 
--- ✨ красивый градиент для элементов
 local function gradient(p, c1, c2, rot)
     return create("UIGradient", {
         Color = ColorSequence.new(c1 or Theme.Element, c2 or Theme.BackgroundAlt),
@@ -127,7 +116,6 @@ local TYPE_COLORS = {
 }
 local TYPE_ICONS = { Success="✓", Info="i", Warning="!", Error="✕" }
 
--- Универсальный нотиф (работает и как Library:Notify, и как Window:Notify)
 local function showNotify(opts)
     opts = opts or {}
     local title    = opts.Title or "Notification"
@@ -196,7 +184,6 @@ local function showNotify(opts)
     end)
 end
 
--- Доступно как Library:Notify{...}
 function Library:Notify(opts) showNotify(opts) end
 
 ----------------------------------------------------------------------
@@ -212,6 +199,13 @@ function Library:CreateWindow(config)
     Window._toggles = {}
     Window._flags = {}
     function Window:Notify(opts) showNotify(opts) end
+
+    -- ✅ регистратор флагов
+    local function regFlag(cfg, api)
+        if cfg and cfg.Flag then Window._flags[cfg.Flag] = api end
+        return api
+    end
+    Window._regFlag = regFlag
 
     local screenGui = create("ScreenGui", {
         Name="MoroLumina", ResetOnSpawn=false, DisplayOrder=999,
@@ -236,7 +230,6 @@ function Library:CreateWindow(config)
     stroke(main, Theme.Stroke, 1.2, 0)
     gradient(main, Theme.Background, Theme.BackgroundAlt, 90)
 
-    -- Шапка
     local topBar = create("Frame", {
         Name="TopBar", BackgroundColor3=Theme.BackgroundAlt,
         Size=UDim2.new(1,0,0,56), Parent=main,
@@ -268,7 +261,6 @@ function Library:CreateWindow(config)
     stroke(closeBtn, Theme.Stroke, 1, 0)
     ripple(closeBtn)
 
-    -- Сайдбар
     local sidebar = create("Frame", {
         Name="Sidebar", BackgroundColor3=Theme.BackgroundAlt,
         Position=UDim2.new(0,12,0,68), Size=UDim2.new(0,168,1,-80), Parent=main,
@@ -283,7 +275,6 @@ function Library:CreateWindow(config)
     })
     create("UIListLayout", {Padding=UDim.new(0,6), SortOrder=Enum.SortOrder.LayoutOrder, Parent=tabList})
 
-    -- Контент
     local content = create("Frame", {
         Name="Content", BackgroundColor3=Theme.BackgroundAlt,
         Position=UDim2.new(0,192,0,68), Size=UDim2.new(1,-204,1,-80), Parent=main,
@@ -293,7 +284,6 @@ function Library:CreateWindow(config)
 
     local pages = create("Frame", {BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Parent=content})
 
-    -- Перетаскивание окна
     do
         local dragging, dragStart, startPos
         topBar.InputBegan:Connect(function(i)
@@ -310,7 +300,6 @@ function Library:CreateWindow(config)
         end)
     end
 
-    -- Видимость / toggle
     local isVisible = true
     local floatLogo
     local function setVisible(state)
@@ -327,7 +316,6 @@ function Library:CreateWindow(config)
     end
     Window.SetVisible = function(_, s) setVisible(s) end
 
-    -- Плавающая кнопка
     local floatBtn = create("TextButton", {
         Name="FloatToggle", BackgroundColor3=Theme.Background,
         Size=UDim2.new(0,52,0,52), Position=UDim2.new(0,20,0,20),
@@ -449,9 +437,9 @@ function Library:CreateWindow(config)
             return {SetText=function(_,t) lbl.Text=t end, Instance=el}
         end
 
-        --// KEY BIND
+        --// KEY BIND (встроенный, для Button/Toggle)
         local function attachKeybind(parent, xOffset, onTrigger, defaultKey)
-            local currentKey = defaultKey  -- Enum.KeyCode или nil
+            local currentKey = defaultKey
             local binding = false
 
             local box = create("TextButton", {
@@ -461,15 +449,11 @@ function Library:CreateWindow(config)
                 AnchorPoint = Vector2.new(0, 0.5),
                 Text = currentKey and currentKey.Name or "...",
                 TextColor3 = currentKey and Theme.Accent or Theme.TextDim,
-                Font = Theme.Font,
-                TextSize = 11,
-                AutoButtonColor = false,
-                Parent = parent,
+                Font = Theme.Font, TextSize = 11, AutoButtonColor = false, Parent = parent,
             })
             corner(box, 6)
             local bStroke = stroke(box, Theme.Stroke, 1, 0.4)
 
-            -- авто-ширина под длинные имена клавиш
             local function fit()
                 local txt = currentKey and currentKey.Name or "..."
                 box.Text = txt
@@ -486,16 +470,14 @@ function Library:CreateWindow(config)
                 box.Text = "..."
                 box.TextColor3 = Theme.Accent
                 TweenService:Create(bStroke, TW.Fast, { Color = Theme.StrokeAccent, Transparency = 0 }):Play()
-
                 local conn
                 conn = UserInputService.InputBegan:Connect(function(input, gp)
                     if input.UserInputType == Enum.UserInputType.Keyboard then
                         if input.KeyCode == Enum.KeyCode.Backspace or input.KeyCode == Enum.KeyCode.Delete then
-                            currentKey = nil           -- сброс бинда
+                            currentKey = nil
                         elseif input.KeyCode == Enum.KeyCode.Escape then
-                            -- отмена, оставляем как было
                         else
-                            currentKey = input.KeyCode -- назначаем
+                            currentKey = input.KeyCode
                         end
                         binding = false
                         fit()
@@ -505,7 +487,6 @@ function Library:CreateWindow(config)
                 end)
             end)
 
-            -- Глобальный слушатель: нажатие забинженной клавиши -> триггер
             UserInputService.InputBegan:Connect(function(input, gp)
                 if gp or binding then return end
                 if currentKey and input.KeyCode == currentKey then
@@ -537,7 +518,6 @@ function Library:CreateWindow(config)
                 if cfg.Callback then task.spawn(cfg.Callback) end
             end
 
-            -- ✅ ВСТРОЕННЫЙ КЕЙБИНД
             local kb
             if cfg.Keybind then
                 kb = attachKeybind(el, 12, fire, cfg.DefaultKey)
@@ -551,12 +531,12 @@ function Library:CreateWindow(config)
             btn.MouseButton1Click:Connect(fire)
             ripple(el)
 
-            return {
+            return regFlag(cfg, {
                 Fire = fire,
                 SetKey = function(_, k) if kb then kb.Set(k) end end,
                 GetKey = function() return kb and kb.Get() end,
                 Instance = el,
-            }
+            })
         end
 
         --// TOGGLE
@@ -574,7 +554,6 @@ function Library:CreateWindow(config)
                 TextXAlignment = Enum.TextXAlignment.Left, Parent = el,
             })
 
-            -- сам переключатель справа
             local track = create("Frame", {
                 BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff,
                 Size = UDim2.new(0, 40, 0, 22),
@@ -605,10 +584,8 @@ function Library:CreateWindow(config)
                 if cfg.Callback then task.spawn(cfg.Callback, state) end
             end
 
-            -- ✅ ВСТРОЕННЫЙ КЕЙБИНД (если cfg.Keybind == true)
             local kb
             if cfg.Keybind then
-                -- xOffset = 62 чтобы поле было ЛЕВЕЕ тогла (тогл занимает ~52px справа)
                 kb = attachKeybind(el, 62, toggle, cfg.DefaultKey)
             end
 
@@ -620,14 +597,18 @@ function Library:CreateWindow(config)
             btn.MouseButton1Click:Connect(toggle)
             ripple(el)
 
-            return {
-                Set = function(_, v) state = v; update() end,
+            local api = regFlag(cfg, {
+                Set = function(_, v) state = v; update(); if cfg.Callback then task.spawn(cfg.Callback, state) end end,
                 Get = function() return state end,
                 SetKey = function(_, k) if kb then kb.Set(k) end end,
                 GetKey = function() return kb and kb.Get() end,
                 Instance = el,
-            }
+            })
+            table.insert(Window._toggles, api)
+            return api
         end
+
+
         --// SLIDER
         function Tab:CreateSlider(cfg)
             cfg=cfg or {}; local min=cfg.Min or 0; local max=cfg.Max or 100
@@ -660,14 +641,15 @@ function Library:CreateWindow(config)
             UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dragging=false end end)
             UserInputService.InputChanged:Connect(function(i) if dragging and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then update(i.Position.X) end end)
             ripple(el)
-            return {Set=function(_,v)
+            return regFlag(cfg, {Set=function(_,v)
                 value=math.clamp(v,min,max); local pct=(value-min)/(max-min)
                 fill.Size=UDim2.new(pct,0,1,0); knob.Position=UDim2.new(pct,0,0.5,0)
                 valLabel.Text=tostring(value)..suffix
                 if cfg.Callback then task.spawn(cfg.Callback,value) end
-            end, Get=function() return value end, Instance=el}
+            end, Get=function() return value end, Instance=el})
         end
 
+        --// SLIDER + INPUT
         function Tab:CreateSliderInput(cfg)
             cfg = cfg or {}
             local min      = cfg.Min or 0
@@ -676,15 +658,13 @@ function Library:CreateWindow(config)
             local value    = math.clamp(cfg.Default or min, min, max)
             local suffix   = cfg.Suffix or ""
 
-            local el = baseElement(64)  -- повыше: название + поле сверху, ползунок снизу
+            local el = baseElement(64)
 
-            -- округление по decimals
             local function round(v)
                 local m = 10 ^ decimals
                 return math.floor(v * m + 0.5) / m
             end
 
-            -- Название (слева сверху)
             create("TextLabel", {
                 BackgroundTransparency = 1,
                 Size = UDim2.new(1, -90, 0, 22),
@@ -694,7 +674,6 @@ function Library:CreateWindow(config)
                 TextXAlignment = Enum.TextXAlignment.Left, Parent = el,
             })
 
-            -- Поле ввода (справа сверху)
             local inputBox = create("TextBox", {
                 BackgroundColor3 = Theme.Section,
                 Size = UDim2.new(0, 70, 0, 24),
@@ -702,40 +681,30 @@ function Library:CreateWindow(config)
                 Text = tostring(round(value)) .. suffix,
                 TextColor3 = Theme.Accent,
                 Font = Theme.Font, TextSize = 12,
-                ClearTextOnFocus = false,
-                Parent = el,
+                ClearTextOnFocus = false, Parent = el,
             })
             corner(inputBox, 6)
             local inStroke = stroke(inputBox, Theme.Stroke, 1, 0.4)
 
-            -- Дорожка ползунка (снизу)
             local track = create("Frame", {
                 BackgroundColor3 = Theme.ToggleOff,
                 Size = UDim2.new(1, -24, 0, 6),
-                Position = UDim2.new(0, 12, 1, -16),
-                Parent = el,
+                Position = UDim2.new(0, 12, 1, -16), Parent = el,
             })
             corner(track, 3)
-
-            -- Заполнение
             local fill = create("Frame", {
                 BackgroundColor3 = Theme.Accent,
-                Size = UDim2.new((value - min) / (max - min), 0, 1, 0),
-                Parent = track,
+                Size = UDim2.new((value - min) / (max - min), 0, 1, 0), Parent = track,
             })
             corner(fill, 3)
-
-            -- Кружок-ручка
             local knob = create("Frame", {
                 BackgroundColor3 = Color3.fromRGB(255,255,255),
                 Size = UDim2.new(0, 12, 0, 12),
                 Position = UDim2.new((value - min) / (max - min), -6, 0.5, 0),
-                AnchorPoint = Vector2.new(0, 0.5),
-                Parent = track,
+                AnchorPoint = Vector2.new(0, 0.5), Parent = track,
             })
             corner(knob, 6)
 
-            -- ===== ОБНОВЛЕНИЕ ВИЗУАЛА =====
             local function updateVisual(animate)
                 local pct = (value - min) / (max - min)
                 local tw = animate and TW.Fast or TweenInfo.new(0)
@@ -743,18 +712,15 @@ function Library:CreateWindow(config)
                 TweenService:Create(knob, tw, { Position = UDim2.new(pct, -6, 0.5, 0) }):Play()
             end
 
-            -- ===== УСТАНОВКА ЗНАЧЕНИЯ (общая точка) =====
             local function setValue(v, fromInput, animate)
                 value = math.clamp(round(v), min, max)
                 updateVisual(animate)
-                -- обновляем поле, только если меняли НЕ через поле (чтобы не мешать вводу)
                 if not fromInput then
                     inputBox.Text = tostring(value) .. suffix
                 end
                 if cfg.Callback then task.spawn(cfg.Callback, value) end
             end
 
-            -- ===== ПЕРЕТАСКИВАНИЕ ПОЛЗУНКА =====
             local dragging = false
             local function setFromX(x)
                 local rel = math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
@@ -764,55 +730,46 @@ function Library:CreateWindow(config)
             track.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1
                 or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = true
-                    setFromX(input.Position.X)
+                    dragging = true; setFromX(input.Position.X)
                 end
             end)
             knob.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1
-                or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = true
-                end
+                or input.UserInputType == Enum.UserInputType.Touch then dragging = true end
             end)
             UserInputService.InputChanged:Connect(function(input)
                 if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
-                or input.UserInputType == Enum.UserInputType.Touch) then
-                    setFromX(input.Position.X)
-                end
+                or input.UserInputType == Enum.UserInputType.Touch) then setFromX(input.Position.X) end
             end)
             UserInputService.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1
-                or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = false
-                end
+                or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
             end)
 
-            -- ===== ВВОД В ПОЛЕ =====
             inputBox.Focused:Connect(function()
                 TweenService:Create(inStroke, TW.Fast, { Color = Theme.StrokeAccent, Transparency = 0 }):Play()
             end)
             inputBox.FocusLost:Connect(function()
                 TweenService:Create(inStroke, TW.Fast, { Color = Theme.Stroke, Transparency = 0.4 }):Play()
-                -- вытаскиваем число из текста (убираем suffix и мусор)
                 local num = tonumber(inputBox.Text:gsub("[^%-%d%.]", ""))
                 if num then
-                    setValue(num, true, true)        -- двигаем ползунок плавно
-                    inputBox.Text = tostring(value) .. suffix  -- нормализуем (clamp/round)
+                    setValue(num, true, true)
+                    inputBox.Text = tostring(value) .. suffix
                 else
-                    inputBox.Text = tostring(value) .. suffix  -- вернуть как было
+                    inputBox.Text = tostring(value) .. suffix
                 end
             end)
 
             updateVisual(false)
 
-            return {
+            return regFlag(cfg, {
                 Set = function(_, v) setValue(v, false, true) end,
                 Get = function() return value end,
                 Instance = el,
-            }
+            })
         end
 
-        --// DROPDOWN (с рабочим :Refresh)
+        --// DROPDOWN
         function Tab:CreateDropdown(cfg)
             cfg=cfg or {}; local options=cfg.Options or {}; local multi=cfg.Multi or false
             local selected=multi and {} or (cfg.Default or "Select..."); local open=false
@@ -839,28 +796,21 @@ function Library:CreateWindow(config)
 
             local optButtons = {}
             local function buildOptions()
-                for _, b in ipairs(optButtons) do b.Btn:Destroy() end 
+                for _, b in ipairs(optButtons) do b.Btn:Destroy() end
                 table.clear(optButtons)
                 for _, opt in ipairs(options) do
                     local oBtn = create("TextButton", {
                         BackgroundColor3 = Theme.Section,
-                        Size = UDim2.new(1, 0, 0, 30),
-                        Text = "",
-                        AutoButtonColor = false,
-                        Parent = listHolder,
+                        Size = UDim2.new(1, 0, 0, 30), Text = "",
+                        AutoButtonColor = false, Parent = listHolder,
                     })
                     corner(oBtn, 8)
                     local oStroke = stroke(oBtn, Theme.Stroke, 1, 0.5)
                     local oLbl = create("TextLabel", {
-                        BackgroundTransparency = 1,
-                        Size = UDim2.new(1, -16, 1, 0),
-                        Position = UDim2.new(0, 10, 0, 0),
-                        Text = tostring(opt),
-                        TextColor3 = Theme.TextDim,
-                        Font = Theme.Font,
-                        TextSize = 12,
-                        TextXAlignment = Enum.TextXAlignment.Left,
-                        Parent = oBtn,
+                        BackgroundTransparency = 1, Size = UDim2.new(1, -16, 1, 0),
+                        Position = UDim2.new(0, 10, 0, 0), Text = tostring(opt),
+                        TextColor3 = Theme.TextDim, Font = Theme.Font, TextSize = 12,
+                        TextXAlignment = Enum.TextXAlignment.Left, Parent = oBtn,
                     })
                     local function highlight()
                         local on = multi and selected[opt] or (selected == opt)
@@ -874,13 +824,10 @@ function Library:CreateWindow(config)
                     end
                     highlight()
                     oBtn.MouseButton1Click:Connect(function()
-                        if multi then
-                            selected[opt] = not selected[opt]
-                        else
-                            selected = opt
-                        end
+                        if multi then selected[opt] = not selected[opt]
+                        else selected = opt end
                         refreshText()
-                        for _, b in ipairs(optButtons) do b.Refresh() end  -- ✅ .Refresh из таблицы
+                        for _, b in ipairs(optButtons) do b.Refresh() end
                         if cfg.Callback then task.spawn(cfg.Callback, selected) end
                         if not multi then
                             open = false
@@ -888,7 +835,6 @@ function Library:CreateWindow(config)
                             TweenService:Create(arrow, TW.Fast, { Rotation = 0 }):Play()
                         end
                     end)
-                    -- ✅ храним в таблице, а НЕ в Instance
                     table.insert(optButtons, { Btn = oBtn, Refresh = highlight })
                 end
             end
@@ -902,12 +848,12 @@ function Library:CreateWindow(config)
             end)
             ripple(el)
 
-            return {
+            return regFlag(cfg, {
                 Set = function(_, v) selected = v; refreshText(); for _, b in ipairs(optButtons) do b.Refresh() end end,
                 Get = function() return selected end,
                 Refresh = function(_, newOpts) options = newOpts or {}; buildOptions(); refreshText() end,
                 Instance = el,
-            }
+            })
         end
 
         --// TEXTBOX
@@ -928,7 +874,7 @@ function Library:CreateWindow(config)
                 TweenService:Create(bStroke,TW.Fast,{Color=Theme.Stroke,Transparency=0}):Play()
                 if cfg.Callback then task.spawn(cfg.Callback,input.Text,enter) end
             end)
-            return {Set=function(_,t) input.Text=t end, Get=function() return input.Text end, Instance=el}
+            return regFlag(cfg, {Set=function(_,t) input.Text=t end, Get=function() return input.Text end, Instance=el})
         end
 
         --// KEYBIND
@@ -956,10 +902,10 @@ function Library:CreateWindow(config)
                 end
             end)
             ripple(el)
-            return {Set=function(_,k) currentKey=k; keyLabel.Text=k.Name end, Get=function() return currentKey end, Instance=el}
+            return regFlag(cfg, {Set=function(_,k) currentKey=k; keyLabel.Text=k and k.Name or "None" end, Get=function() return currentKey end, Instance=el})
         end
 
-        --// COLOR PICKER (RGB слайдеры)
+        --// COLOR PICKER
         function Tab:CreateColorPicker(cfg)
             cfg=cfg or {}; local color=cfg.Default or Color3.fromRGB(255,255,255)
             local open=false; local el=baseElement(42); el.ClipsDescendants=true
@@ -980,6 +926,7 @@ function Library:CreateWindow(config)
                 if cfg.Callback then task.spawn(cfg.Callback,color) end
             end
 
+            local channels = {}
             local function makeChannel(name, getv, setv)
                 local row=create("Frame", {BackgroundColor3=Theme.Section, Size=UDim2.new(1,0,0,24), Parent=holder})
                 corner(row,6)
@@ -995,36 +942,8 @@ function Library:CreateWindow(config)
                     local rel=math.clamp((x-barBack.AbsolutePosition.X)/barBack.AbsoluteSize.X,0,1)
                     setv(math.floor(rel*255)); fill.Size=UDim2.new(rel,0,1,0); apply()
                 end
-                barBack.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dragging=true; upd(i.Position.X) end end)
-                UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dragging=false end end)
-                UserInputService.InputChanged:Connect(function(i) if dragging and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then upd(i.Position.X) end end)
-            end
-
-            makeChannel("R", function() return r end, function(v) r=v end)
-            makeChannel("G", function() return g end, function(v) g=v end)
-            makeChannel("B", function() return b end, function(v) b=v end)
-
-            header.MouseButton1Click:Connect(function()
-                open=not open
-                TweenService:Create(el,TW.Normal,{Size=UDim2.new(1,0,0,open and 146 or 42)}):Play()
-            end)
-            ripple(el)
-
-            return {
-                Set=function(_,c)
-                    color=c; r,g,b=math.floor(c.R*255),math.floor(c.G*255),math.floor(c.B*255)
-                    preview.BackgroundColor3=c
-                end,
-                Get=function() return color end,
-                Instance=el,
-            }
-        end
-
-        return Tab
-    end -- конец Window:CreateTab
-
     ----------------------------------------------------------------
-    -- ВСТРОЕННЫЙ ТАБ "SETTINGS" (всегда последний)
+    -- ВСТРОЕННЫЙ ТАБ "SETTINGS"
     ----------------------------------------------------------------
     do
         local HttpService     = game:GetService("HttpService")
@@ -1095,10 +1014,10 @@ function Library:CreateWindow(config)
         --========================== КОНФИГ ==========================--
         SettingsTab:CreateSection("Configuration")
 
-        local CONFIG_FOLDER = "MoroLumina/configs"
+        local placeFolder   = tostring(game.PlaceId or "universal")
+        local CONFIG_FOLDER = "MoroLumina/"..placeFolder
         local hasFS = (writefile ~= nil and readfile ~= nil and listfiles ~= nil)
 
-        -- создаём папку, если поддерживается
         if hasFS and makefolder then
             pcall(function()
                 if not isfolder("MoroLumina") then makefolder("MoroLumina") end
@@ -1108,11 +1027,28 @@ function Library:CreateWindow(config)
 
         local currentConfigName = ""
 
-        -- собрать значения всех Flag-тоглов
+        -- сериализация значений (Color3 / EnumItem нельзя в JSON напрямую)
+        local function serialize(v)
+            if typeof(v) == "Color3" then
+                return {__color = true, R = v.R, G = v.G, B = v.B}
+            elseif typeof(v) == "EnumItem" then
+                return {__enum = true, Name = v.Name}
+            end
+            return v
+        end
+        local function deserialize(v)
+            if type(v) == "table" then
+                if v.__color then return Color3.new(v.R, v.G, v.B) end
+                if v.__enum then return Enum.KeyCode[v.Name] end
+            end
+            return v
+        end
+
         local function gatherConfig()
             local out = {}
             for flag, obj in pairs(Window._flags) do
-                out[flag] = obj.Get()
+                local ok, val = pcall(function() return obj.Get() end)
+                if ok then out[flag] = serialize(val) end
             end
             return out
         end
@@ -1120,11 +1056,12 @@ function Library:CreateWindow(config)
         local function applyConfig(tbl)
             for flag, val in pairs(tbl) do
                 local obj = Window._flags[flag]
-                if obj then obj:Set(val) end
+                if obj and obj.Set then
+                    pcall(function() obj:Set(deserialize(val)) end)
+                end
             end
         end
 
-        -- список существующих конфигов
         local function getConfigList()
             local names = {}
             if hasFS then
@@ -1139,9 +1076,9 @@ function Library:CreateWindow(config)
             return names
         end
 
-        local configDropdown -- forward declare
+        local configDropdown
 
-        local nameBox = SettingsTab:CreateTextbox({
+        SettingsTab:CreateTextbox({
             Name = "Config Name",
             Placeholder = "my_config",
             Callback = function(txt) currentConfigName = txt end,
@@ -1231,12 +1168,10 @@ function Library:CreateWindow(config)
         SettingsTab:CreateButton({
             Name = "Unload Menu",
             Callback = function()
-                -- 1) Отключаем все тоглы (вызовет их Callback с false)
                 for _, t in ipairs(Window._toggles) do
                     pcall(function() if t.Get() then t:Set(false) end end)
                 end
                 Window:Notify({Title="MoroLumina", Content="Unloaded. Bye!", Type="Warning"})
-                -- 2) Удаляем GUI через небольшую задержку
                 task.delay(0.4, function()
                     if Window.Gui then Window.Gui:Destroy() end
                 end)
